@@ -1,0 +1,19 @@
+# Inherit project settings from top-level CMakeLists.txt
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(/usr/include/pcl-1.12)
+include_directories(/usr/include/eigen3)
+
+# Ensure PCL is found and linked
+find_package(PCL REQUIRED) 
+
+# Include PCL directories
+include_directories(${PCL_INCLUDE_DIRS})
+
+# Create separate executables with their own dependencies
+add_executable(src io.cpp main.cpp)
+
+target_link_libraries(src PUBLIC ${PCL_LIBRARIES})
+
+
+
+
