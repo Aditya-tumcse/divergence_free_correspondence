@@ -1,4 +1,7 @@
 #include "io.hpp"
+#include "utilities.hpp"
+
+#include<cassert>
 
 namespace adi{
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud::readPointCloud(const std::string &point_cloud_path)
@@ -80,5 +83,47 @@ namespace adi{
             }
         }
        }
+    }
+
+    const std::vector<Eigen::Vector3d> pointCloud::extractPoints(std::vector<adi::Point> point_cl)
+    {
+        std::vector<Eigen::Vector3d> points;
+        points.reserve(point_cl.size());
+
+        for(int i = 0;i < point_cl.size();++i)
+        {
+            points.emplace_back(point_cl[i].s_point);
+        }
+        return points;
+    }
+
+    std::vector<adi::Point> pointCloud::samplePointCloud(std::vector<adi::Point> point_cloud, const int max_number_of_points)
+    {   
+        assert(max_number_of_points > 1);
+        Eigen::MatrixXd distance_matrix = utilities::computeDistanceMatrix(this->extractPoints(point_cloud));
+        std::vector<adi::Point> subsampled_point_cloud;
+        subsampled_point_cloud.reserve(max_number_of_points);
+
+        if(point_cloud.size() != 0){
+            int random_index = std::rand() % m_point_cloud.size();
+            adi::Point anchor_point = point_cloud[random_index];
+            subsampled_point_cloud.emplace_back(anchor_point);
+            for(int i = 0;i < max_number_of_points - 1;++i)
+            {
+                const int row_id = random_index;
+                const int index_of_farthest_point = distance_matrix.row(row_id).maxCoeff();
+                const adi::Point farthest_point = point_cloud[index_of_farthest_point];
+                subsampled_point_cloud.emplace_back(farthest_point);
+                distance_matrix.row(row_id).setConstant(-100);
+                distance_matrix.col(row_id).setConstant(-100);
+                std::swap(point_cloud[index_of_farthest_point], point_cloud.back());
+                point_cloud.pop_back();
+                random_index = index_of_farthest_point;
+            }
+        }
+        else{
+            std::cout << "Input point cloud is empty" << std::endl;
+        }
+        return subsampled_point_cloud;
     }
 }
