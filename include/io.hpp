@@ -34,9 +34,15 @@ class pointCloud{
 
         void computeShotFeatures(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals);
 
+        const std::vector<Point> getPointCloud() const{ return m_point_cloud;}
+
+        std::vector<Point> samplePointCloud(std::vector<adi::Point> point_cloud, const int max_number_of_points);
+
     private:
         std::string m_point_cloud_path;
         std::vector<Point> m_point_cloud; 
+
+        const std::vector<Eigen::Vector3d> extractPoints(std::vector<adi::Point> points);
 };
 }
 #endif // IO_HPP
