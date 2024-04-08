@@ -19,6 +19,8 @@ struct Point{
     Point() : s_point(0.0,0.0,0.0), s_normal(0.0,0.0,0.0), s_descriptor{} {}
 
     Point(Eigen::Vector3d point, Eigen::Vector3d normal, std::array<double, 352> descriptor) : s_point(point), s_normal(normal), s_descriptor(descriptor) {}
+
+    pcl::SHOT352 convertToPCLDescriptor();
 };
 
 

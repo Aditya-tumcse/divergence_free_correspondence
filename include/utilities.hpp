@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cmath>
 #include <eigen3/Eigen/Dense>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/registration/correspondence_estimation.h>
 
 namespace utilities{
 
@@ -22,6 +24,37 @@ namespace utilities{
         }
         return distance_matrix;
     }
+
+    std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(std::vector<adi::Point> &source_point_cloud,std::vector<adi::Point> &target_point_cloud)
+    {
+
+        assert(source_point_cloud.size() == target_point_cloud.size());
+        std::vector<std::pair<adi::Point, adi::Point>> correspondences;
+        pcl::PointCloud<pcl::SHOT352>::Ptr target_descriptors(new pcl::PointCloud<pcl::SHOT352>);
+        for(adi::Point &point : target_point_cloud)
+        {
+            target_descriptors->push_back(point.convertToPCLDescriptor());
+        }
+        pcl::KdTreeFLANN<pcl::SHOT352> kdtree;
+        kdtree.setInputCloud(target_descriptors);
+
+        // Find correspondence
+        for(auto &source_point : source_point_cloud)
+        {
+            pcl::SHOT352 source_descriptor = source_point.convertToPCLDescriptor();
+            std::vector<int> nn_indices(1);
+            std::vector<float> nn_distances(1);
+
+            if(kdtree.nearestKSearch(source_descriptor, 1, nn_indices, nn_distances) > 0)
+            {
+                int target_index = nn_indices[0];
+                correspondences.emplace_back(std::make_pair(source_point, target_point_cloud[target_index]));
+            }
+        }
+        return correspondences;
+    }
+
+
 }
 
 #endif
