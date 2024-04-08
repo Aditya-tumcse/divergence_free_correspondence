@@ -4,6 +4,17 @@
 #include<cassert>
 
 namespace adi{
+
+    pcl::SHOT352 Point::convertToPCLDescriptor()
+     {
+        pcl::SHOT352 descriptor;
+        for(unsigned int i=0;i < s_descriptor.size();++i)
+        {
+            descriptor.descriptor[i] = static_cast<float>(s_descriptor[i]);
+        }
+        return descriptor;
+    }
+    
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud::readPointCloud(const std::string &point_cloud_path)
     {
         if(point_cloud_path.empty())
