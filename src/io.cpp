@@ -1,7 +1,69 @@
 #include "io.hpp"
-#include "utilities.hpp"
 
 #include<cassert>
+
+namespace utilities{
+    double eucledianDistance(const Eigen::Vector3d &point_1, const Eigen::Vector3d &point_2)
+    {
+        return (std::sqrt(std::pow((point_1[0] - point_2[0]), 2) + std::pow((point_1[1] - point_2[1]), 2) + std::pow((point_1[2] - point_2[2]), 2)));
+    }
+
+    Eigen::MatrixXd computeDistanceMatrix(const std::vector<Eigen::Vector3d> points){
+        Eigen::MatrixXd distance_matrix = Eigen::MatrixXd::Zero(points.size(), points.size());
+        for(int i = 0;i < points.size();++i){
+            for(int j = 0;j < points.size();++j){
+                double eucledian_distance = eucledianDistance(points[i], points[j]);
+                distance_matrix(i,j) = eucledian_distance;
+            }
+        }
+        return distance_matrix;
+    }
+
+    double computeL2Norm(const std::array<double, 352> &descriptor_1, const std::array<double, 352>  &descriptor_2)
+    {   
+        std::array<double, 352> difference{};
+        for(unsigned int i = 0;i < descriptor_1.size();++i)
+        {   
+            difference[i] = descriptor_1[i] - descriptor_2[i];
+        }
+        double sum = 0.0;
+        for(double element : difference)
+        {
+            sum += element * element;
+        }
+        return std::sqrt(sum);
+    }
+
+    std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud)
+    {
+
+        assert(source_point_cloud.size() == target_point_cloud.size());
+        std::vector<std::pair<adi::Point, adi::Point>> correspondences;
+        pcl::PointCloud<pcl::SHOT352>::Ptr target_descriptors(new pcl::PointCloud<pcl::SHOT352>);
+        for(adi::Point &point : target_point_cloud)
+        {
+            target_descriptors->push_back(point.convertToPCLDescriptor());
+        }
+        pcl::KdTreeFLANN<pcl::SHOT352> kdtree;
+        kdtree.setInputCloud(target_descriptors);
+
+        // Find correspondence
+        for(auto &source_point : source_point_cloud)
+        {
+            pcl::SHOT352 source_descriptor = source_point.convertToPCLDescriptor();
+            std::vector<int> nn_indices(1);
+            std::vector<float> nn_distances(1);
+
+            if(kdtree.nearestKSearch(source_descriptor, 1, nn_indices, nn_distances) > 0)
+            {
+                int target_index = nn_indices[0];
+                correspondences.emplace_back(std::make_pair(source_point, target_point_cloud[target_index]));
+            }
+        }
+        return correspondences;
+    }
+}
+
 
 namespace adi{
 
@@ -14,7 +76,12 @@ namespace adi{
         }
         return descriptor;
     }
-    
+
+    pointCloud::pointCloud(const std::string &point_cloud_path, const double &search_radius){
+        pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud = this->readPointCloud(point_cloud_path);
+        this->computeShotFeatures(point_cloud, search_radius);
+    }
+
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud::readPointCloud(const std::string &point_cloud_path)
     {
         if(point_cloud_path.empty())
@@ -31,7 +98,7 @@ namespace adi{
         }
     }
 
-    pcl::PointCloud<pcl::PointNormal>::Ptr pointCloud::normalEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud, const float &search_radius){
+    pcl::PointCloud<pcl::PointNormal>::Ptr pointCloud::normalEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud, const double &search_radius){
         if(point_cloud->points.size() == 0){
             return nullptr;
         }
@@ -54,8 +121,9 @@ namespace adi{
         }
     }
 
-    void pointCloud::computeShotFeatures(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals)
+    void pointCloud::computeShotFeatures(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const double &search_radius)
     {
+       pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals = this->normalEstimation(cloud, search_radius); 
        if(cloud_with_normals->points.size() == 0)
        {
         std::exit(EXIT_FAILURE);
@@ -108,27 +176,28 @@ namespace adi{
         return points;
     }
 
-    std::vector<adi::Point> pointCloud::samplePointCloud(std::vector<adi::Point> point_cloud, const int max_number_of_points)
+    std::vector<adi::Point> pointCloud::samplePointCloud(const unsigned int max_number_of_points)
     {   
         assert(max_number_of_points > 1);
-        Eigen::MatrixXd distance_matrix = utilities::computeDistanceMatrix(this->extractPoints(point_cloud));
+        Eigen::MatrixXd distance_matrix = utilities::computeDistanceMatrix(this->extractPoints(m_point_cloud));
         std::vector<adi::Point> subsampled_point_cloud;
         subsampled_point_cloud.reserve(max_number_of_points);
 
-        if(point_cloud.size() != 0){
+        std::vector<adi::Point> og_point_cloud_copy = m_point_cloud;
+        if(m_point_cloud.size() != 0){
             int random_index = std::rand() % m_point_cloud.size();
-            adi::Point anchor_point = point_cloud[random_index];
+            adi::Point anchor_point = og_point_cloud_copy[random_index];
             subsampled_point_cloud.emplace_back(anchor_point);
             for(int i = 0;i < max_number_of_points - 1;++i)
             {
                 const int row_id = random_index;
                 const int index_of_farthest_point = distance_matrix.row(row_id).maxCoeff();
-                const adi::Point farthest_point = point_cloud[index_of_farthest_point];
+                const adi::Point farthest_point = og_point_cloud_copy[index_of_farthest_point];
                 subsampled_point_cloud.emplace_back(farthest_point);
                 distance_matrix.row(row_id).setConstant(-100);
                 distance_matrix.col(row_id).setConstant(-100);
-                std::swap(point_cloud[index_of_farthest_point], point_cloud.back());
-                point_cloud.pop_back();
+                std::swap(og_point_cloud_copy[index_of_farthest_point], og_point_cloud_copy.back());
+                og_point_cloud_copy.pop_back();
                 random_index = index_of_farthest_point;
             }
         }

@@ -26,25 +26,30 @@ struct Point{
 
 class pointCloud{
     public:
-        pointCloud(std::string point_cloud_path) : m_point_cloud_path(point_cloud_path){}
-
-        const std::string getPointCloudPath() const {return m_point_cloud_path;}
-
-        pcl::PointCloud<pcl::PointXYZ>::Ptr readPointCloud(const std::string &point_cloud_path);
-
-        pcl::PointCloud<pcl::PointNormal>::Ptr normalEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud, const float &search_radius);
-
-        void computeShotFeatures(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals);
+        pointCloud(const std::string &point_cloud_path, const double &search_radius);
 
         const std::vector<Point> getPointCloud() const{ return m_point_cloud;}
 
-        std::vector<Point> samplePointCloud(std::vector<adi::Point> point_cloud, const int max_number_of_points);
+        std::vector<Point> samplePointCloud(const unsigned int max_number_of_points);
 
     private:
-        std::string m_point_cloud_path;
         std::vector<Point> m_point_cloud; 
-
+        
+        pcl::PointCloud<pcl::PointXYZ>::Ptr readPointCloud(const std::string &point_cloud_path);
+        pcl::PointCloud<pcl::PointNormal>::Ptr normalEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud, const double &search_radius);
+        void computeShotFeatures(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_with_normals, const double &search_radius);
+        
         const std::vector<Eigen::Vector3d> extractPoints(std::vector<adi::Point> points);
 };
+}
+
+namespace utilities{
+    double eucledianDistance(const Eigen::Vector3d &point_1, const Eigen::Vector3d &point_2);
+
+    Eigen::MatrixXd computeDistanceMatrix(const std::vector<Eigen::Vector3d> points);
+
+    double computeL2Norm(const std::array<double, 352> &descriptor_1, const std::array<double, 352>  &descriptor_2);
+
+    std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud);
 }
 #endif // IO_HPP
