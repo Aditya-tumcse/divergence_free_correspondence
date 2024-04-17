@@ -7,18 +7,18 @@
 namespace adi{
     namespace deformation_field{
 
-        const std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> getBasisFunctions(unsigned int number_of_basis_functions)
+        const std::vector<Indices> getBasisFunctions(unsigned int number_of_basis_functions)
         {
              // Define a lambda function to calculate the sum of squares of tuple elements
-            auto sum_of_squares = [](const std::tuple<unsigned int, unsigned int, unsigned int>& t) {
+            auto sum_of_squares = [](const Indices& t) {
                 unsigned int sum = 0;
-                sum += std::get<0>(t) * std::get<0>(t);
-                sum += std::get<1>(t) * std::get<1>(t);
-                sum += std::get<2>(t) * std::get<2>(t);
+                sum += t.s_x * t.s_x;
+                sum += t.s_y * t.s_y;
+                sum += t.s_z * t.s_z;
                 return sum;
             };
 
-            std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> basis_functions;
+            std::vector<Indices> basis_functions;
             const unsigned int number_of_basis_functions_per_dimension = number_of_basis_functions / 3;
             for(unsigned int i = 0;i < number_of_basis_functions_per_dimension / 3;++i)
             {
@@ -26,7 +26,7 @@ namespace adi{
                 {
                     for(unsigned int k = 0;k < number_of_basis_functions_per_dimension;++k)
                     {
-                        basis_functions.emplace_back(std::make_tuple(i,j,k));
+                        basis_functions.emplace_back(Indices(i,j,k));
                     }
                 }
             }
@@ -35,17 +35,12 @@ namespace adi{
             return sum_of_squares(a) > sum_of_squares(b);});
 
             // Take the top 1000 elements
-            std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> top_1000(basis_functions.begin(), basis_functions.begin() + 1000);
+            std::vector<adi::deformation_field::Indices> top_1000(basis_functions.begin(), basis_functions.begin() + 1000);
 
             return top_1000;
         }
 
         deformationField::deformationField(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud, const std::vector<std::pair<adi::Point, adi::Point>> &correspondences): m_source_point_cloud(source_point_cloud), m_target_point_cloud(target_point_cloud), m_correspondences(correspondences){}
-        
-        void deformationField::initDeformationField(const std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> &indices_for_basis_function_computation, const std::vector<adi::Point> &point_cloud)
-        {
-            Eigen::Matrix3d gradient_of_basis_functions = this->computeBasisFunctions(point_cloud, indices_for_basis_function_computation);
-        }
         
         const double deformationField::computeMeanEucledianDistance()
         {
@@ -87,16 +82,29 @@ namespace adi{
             return metric_distance;
         }
 
-        const Eigen::Matrix3d deformationField::computeBasisFunctions(const std::vector<adi::Point> &point_cloud, const std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> &indices_for_basis_function_computation)
+        const std::vector<double> deformationField::computGradientOfBasisFunctions(const std::vector<adi::Point> &point_cloud, const std::vector<Indices> &indices_for_basis_function_computation, const unsigned int &dimension)
         {
-            Eigen::Matrix3d basis_functions = Eigen::Matrix3d::Zero(point_cloud.size(), 3);
+            std::vector<double> gradient_of_basis_functions;
+            gradient_of_basis_functions.reserve(point_cloud.size());
+
+            const unsigned int k = dimension;
+            const unsigned int l = (k + 1) % 3;
+            const unsigned int m = (k + 2) % 3;
             for(unsigned int i = 0;i < point_cloud.size();++i)
             {
-                basis_functions(i,0) = static_cast<double>(0.5 * std::sin(point_cloud[i].s_point[0] * M_PI * std::get<0>(indices_for_basis_function_computation[i])));
-                basis_functions(i,1) = static_cast<double>(0.5 * std::sin(point_cloud[i].s_point[1] * M_PI * std::get<1>(indices_for_basis_function_computation[i])));
-                basis_functions(i,2) = static_cast<double>(0.5 * std::sin(point_cloud[i].s_point[2] * M_PI * std::get<2>(indices_for_basis_function_computation[i])));
+                for(unsigned int j = 0;j < indices_for_basis_function_computation.size();++j)
+                {
+                    double result;
+                    if(dimension %3 == 0)
+                        result = std::pow(0.5,3) * M_PI * indices_for_basis_function_computation[j].s_x * std::cos(M_PI * point_cloud[i].s_point[k] * indices_for_basis_function_computation[j].s_x) * std::sin(M_PI * point_cloud[i].s_point[l] * indices_for_basis_function_computation[j].s_y) * std::sin(M_PI * point_cloud[i].s_point[m] * indices_for_basis_function_computation[j].s_z);
+                    else if (dimension %3 == 1)
+                        result = std::pow(0.5,3) * M_PI * indices_for_basis_function_computation[j].s_y * std::cos(M_PI * point_cloud[i].s_point[k] * indices_for_basis_function_computation[j].s_y) * std::sin(M_PI * point_cloud[i].s_point[l] * indices_for_basis_function_computation[j].s_x) * std::sin(M_PI * point_cloud[i].s_point[m] * indices_for_basis_function_computation[j].s_z);
+                    else
+                        result = std::pow(0.5,3) * M_PI * indices_for_basis_function_computation[j].s_z * std::cos(M_PI * point_cloud[i].s_point[k] * indices_for_basis_function_computation[j].s_z) * std::sin(M_PI * point_cloud[i].s_point[l] * indices_for_basis_function_computation[j].s_x) * std::sin(M_PI * point_cloud[i].s_point[m] * indices_for_basis_function_computation[j].s_y);
+                    gradient_of_basis_functions.emplace_back(result);
+                }
             }
-            return basis_functions;
+            return gradient_of_basis_functions;
         }
         
         Eigen::MatrixXd deformationField::computeSoftCorrespondences()

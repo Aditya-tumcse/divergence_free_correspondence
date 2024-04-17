@@ -9,12 +9,20 @@
 namespace adi{
     namespace deformation_field{
 
+        struct Indices{
+            unsigned int s_x;
+            unsigned int s_y;
+            unsigned int s_z;
+
+            Indices() : s_x(0), s_y(0), s_z(0){}
+
+            Indices(unsigned int x, unsigned int y, unsigned int z) : s_x(x), s_y(y), s_z(z){}
+        };
+
         const std::vector<std::tuple<unsigned int>> getBasisFunctions(const int nunber_of_basis_functions);
         class deformationField{
             public:
                 deformationField(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud, const std::vector<std::pair<adi::Point, adi::Point>> &correspondences);
-                
-                void initDeformationField(const std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> &indices_for_basis_function_computation, const std::vector<adi::Point> &point_cloud);
 
                 Eigen::MatrixXd computeSoftCorrespondences();
 
@@ -31,7 +39,7 @@ namespace adi{
                 const double computeMeanDescriptorDistance();
                 const Eigen::MatrixXd computeMetricDistance();
 
-                const Eigen::Matrix3d computeBasisFunctions(const std::vector<adi::Point> &point_cloud, const std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> &indices_for_basis_function_computation);
+                const std::vector<double> computGradientOfBasisFunctions(const std::vector<adi::Point> &point_cloud, const std::vector<Indices> &indices_for_basis_function_computation,const unsigned int &dimension);
         };
     }
 }
