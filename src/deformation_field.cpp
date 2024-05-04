@@ -7,7 +7,7 @@
 namespace adi{
     namespace deformation_field{
 
-        const std::vector<Indices> getBasisFunctions(unsigned int number_of_basis_functions)
+        std::vector<Indices> getBasisFunctions(const unsigned int number_of_basis_functions)
         {
              // Define a lambda function to calculate the sum of squares of tuple elements
             auto sum_of_squares = [](const Indices& t) {
@@ -40,7 +40,21 @@ namespace adi{
             return top_1000;
         }
 
-        deformationField::deformationField(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud, const std::vector<std::pair<adi::Point, adi::Point>> &correspondences): m_source_point_cloud(source_point_cloud), m_target_point_cloud(target_point_cloud), m_correspondences(correspondences){}
+        std::vector<double> getDeformationFieldCoefficients(const unsigned int number_of_coefficients_for_df)
+        {
+            std::vector<double> coefficients_of_df;
+            for(unsigned int i = 0;i < number_of_coefficients_for_df;++i)
+            {
+                coefficients_of_df.emplace_back(0.0);
+            }
+            return coefficients_of_df;
+        }
+
+        deformationField::deformationField(const std::vector<std::pair<adi::Point, adi::Point>> &correspondences) : m_correspondences(correspondences)
+        {
+            m_deformation_field_coefficients = getDeformationFieldCoefficients(100);
+            m_basis_functions = getBasisFunctions(3000);
+        }
         
         const double deformationField::computeMeanEucledianDistance()
         {
@@ -62,19 +76,19 @@ namespace adi{
             return mean_descriptor_distance / m_correspondences.size();
         }
 
-        const Eigen::MatrixXd deformationField::computeMetricDistance()
+        const Eigen::MatrixXd deformationField::computeMetricDistance(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud)
         {
-            Eigen::MatrixXd metric_distance = Eigen::MatrixXd::Zero(m_source_point_cloud.size(), m_source_point_cloud.size());
+            Eigen::MatrixXd metric_distance = Eigen::MatrixXd::Zero(source_point_cloud.size(), source_point_cloud.size());
             const double mean_eucledian_distance = this->computeMeanEucledianDistance();
             const double mean_descriptor_distance = this->computeMeanDescriptorDistance();
             const double factor = mean_eucledian_distance / mean_descriptor_distance;
 
-            for(unsigned int i = 0;i < m_source_point_cloud.size();++i)
+            for(unsigned int i = 0;i < source_point_cloud.size();++i)
             {
-                for(unsigned int j = 0;j < m_target_point_cloud.size();++j)
+                for(unsigned int j = 0;j < target_point_cloud.size();++j)
                 {
-                    const double local_eucledian_distance = (m_source_point_cloud[i].s_point - m_target_point_cloud[j].s_point).norm();
-                    const double local_descriptor_distance = utilities::computeL2Norm(m_source_point_cloud[i].s_descriptor, m_target_point_cloud[j].s_descriptor);
+                    const double local_eucledian_distance = (source_point_cloud[i].s_point - target_point_cloud[j].s_point).norm();
+                    const double local_descriptor_distance = utilities::computeL2Norm(source_point_cloud[i].s_descriptor, target_point_cloud[j].s_descriptor);
                     metric_distance(i,j) = local_eucledian_distance + factor * local_descriptor_distance;
                 }
             }
@@ -107,14 +121,14 @@ namespace adi{
             return gradient_of_basis_functions;
         }
         
-        Eigen::MatrixXd deformationField::computeSoftCorrespondences()
+        Eigen::MatrixXd deformationField::computeSoftCorrespondences(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud)
         {
-            Eigen::MatrixXd correspondences = Eigen::MatrixXd::Zero(m_source_point_cloud.size(), m_source_point_cloud.size());
-            const Eigen::MatrixXd metric_distance = computeMetricDistance();
+            Eigen::MatrixXd correspondences = Eigen::MatrixXd::Zero(source_point_cloud.size(), source_point_cloud.size());
+            const Eigen::MatrixXd metric_distance = computeMetricDistance(source_point_cloud, target_point_cloud);
 
-            for(unsigned int i = 0;i < m_source_point_cloud.size();++i)
+            for(unsigned int i = 0;i < source_point_cloud.size();++i)
             {
-                for(unsigned int j = 0;j < m_target_point_cloud.size();++j)
+                for(unsigned int j = 0;j < target_point_cloud.size();++j)
                 {
                     const double distance = metric_distance(i,j);
 

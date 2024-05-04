@@ -19,7 +19,7 @@ int main()
     std::vector<std::pair<adi::Point, adi::Point>> initial_correspondences = utilities::computeCorrespondences(source_input_cloud.getPointCloud(), target_input_cloud.getPointCloud());
 
     //Initialize deformation field
-    adi::deformation_field::deformationField(source_input_cloud.getPointCloud(), target_input_cloud.getPointCloud(), initial_correspondences);
+    adi::deformation_field::deformationField df(initial_correspondences);
 
     return 0;
 
