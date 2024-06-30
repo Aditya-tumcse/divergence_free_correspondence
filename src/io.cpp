@@ -176,6 +176,17 @@ namespace adi{
         return points;
     }
 
+    uint32_t pointCloud::getColumnIdOfTheFarthestSample(const Eigen::RowVectorXd &row)
+    {
+        std::vector<double> vec(row.data(), row.data() + row.size());
+        auto maxIndex = [](const std::vector<double> &vec){
+            auto it = std::max_element(vec.begin(), vec.end());
+            return static_cast<uint32_t>(std::distance(vec.begin(), it));
+        };
+
+        return maxIndex(vec);
+    }
+
     std::vector<adi::Point> pointCloud::samplePointCloud(const unsigned int max_number_of_points)
     {   
         assert(max_number_of_points > 1);
@@ -191,7 +202,8 @@ namespace adi{
             for(int i = 0;i < max_number_of_points - 1;++i)
             {
                 const int row_id = random_index;
-                const int index_of_farthest_point = distance_matrix.row(row_id).maxCoeff();
+                const double farthest_point_pt = distance_matrix.row(row_id).maxCoeff();
+                const int index_of_farthest_point = this->getColumnIdOfTheFarthestSample(distance_matrix.row(row_id));
                 const adi::Point farthest_point = og_point_cloud_copy[index_of_farthest_point];
                 subsampled_point_cloud.emplace_back(farthest_point);
                 distance_matrix.row(row_id).setConstant(-100);
