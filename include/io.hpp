@@ -30,6 +30,7 @@ class pointCloud{
 
         const std::vector<Point> getPointCloud() const{ return m_point_cloud;}
 
+        uint32_t getColumnIdOfTheFarthestSample(const Eigen::RowVectorXd &row);
         std::vector<Point> samplePointCloud(const unsigned int max_number_of_points);
 
     private:
