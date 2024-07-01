@@ -10,7 +10,7 @@ find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 
 # Create separate executables with their own dependencies
-add_executable(src io.cpp deformation_field.cpp main.cpp)
+add_executable(src io.cpp matching.cpp deformation_field.cpp main.cpp)
 
 target_link_libraries(src PUBLIC ${PCL_LIBRARIES})
 
