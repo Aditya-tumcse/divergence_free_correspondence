@@ -22,7 +22,7 @@ namespace utilities{
     double computeL2Norm(const std::array<double, 352> &descriptor_1, const std::array<double, 352>  &descriptor_2)
     {   
         std::array<double, 352> difference{};
-        for(unsigned int i = 0;i < descriptor_1.size();++i)
+        for(uint32_t i = 0;i < descriptor_1.size();++i)
         {   
             difference[i] = descriptor_1[i] - descriptor_2[i];
         }
@@ -70,7 +70,7 @@ namespace adi{
     pcl::SHOT352 Point::convertToPCLDescriptor()
      {
         pcl::SHOT352 descriptor;
-        for(unsigned int i=0;i < s_descriptor.size();++i)
+        for(uint32_t i=0;i < s_descriptor.size();++i)
         {
             descriptor.descriptor[i] = static_cast<float>(s_descriptor[i]);
         }
@@ -187,7 +187,7 @@ namespace adi{
         return maxIndex(vec);
     }
 
-    std::vector<adi::Point> pointCloud::samplePointCloud(const unsigned int max_number_of_points)
+    std::vector<adi::Point> pointCloud::samplePointCloud(const uint32_t max_number_of_points)
     {   
         assert(max_number_of_points > 1);
         Eigen::MatrixXd distance_matrix = utilities::computeDistanceMatrix(this->extractPoints(m_point_cloud));

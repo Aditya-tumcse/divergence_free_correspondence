@@ -23,7 +23,6 @@ struct Point{
     pcl::SHOT352 convertToPCLDescriptor();
 };
 
-
 class pointCloud{
     public:
         pointCloud(const std::string &point_cloud_path, const double &search_radius);
@@ -31,7 +30,7 @@ class pointCloud{
         const std::vector<Point> getPointCloud() const{ return m_point_cloud;}
 
         uint32_t getColumnIdOfTheFarthestSample(const Eigen::RowVectorXd &row);
-        std::vector<Point> samplePointCloud(const unsigned int max_number_of_points);
+        std::vector<Point> samplePointCloud(const uint32_t max_number_of_points);
 
     private:
         std::vector<Point> m_point_cloud; 
@@ -52,5 +51,7 @@ namespace utilities{
     double computeL2Norm(const std::array<double, 352> &descriptor_1, const std::array<double, 352>  &descriptor_2);
 
     std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud);
+
+    
 }
 #endif // IO_HPP

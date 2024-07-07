@@ -3,141 +3,118 @@
 #include "constants.hpp"
 
 #include<cmath>
+#include<random>
 
 namespace adi{
     namespace deformation_field{
-
-        std::vector<Indices> getBasisFunctions(const unsigned int number_of_basis_functions)
+        const double DeformationField::phi(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
         {
-             // Define a lambda function to calculate the sum of squares of tuple elements
-            auto sum_of_squares = [](const Indices& t) {
-                unsigned int sum = 0;
-                sum += t.s_x * t.s_x;
-                sum += t.s_y * t.s_y;
-                sum += t.s_z * t.s_z;
-                return sum;
-            };
+            return 0.5 * sin(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
+        }
 
-            std::vector<Indices> basis_functions;
-            const unsigned int number_of_basis_functions_per_dimension = number_of_basis_functions / 3;
-            for(unsigned int i = 0;i < number_of_basis_functions_per_dimension / 3;++i)
+        const double DeformationField::dphidx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
+        {
+            return 0.5 * M_PI * index_1 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
+        }
+
+        const double DeformationField::dphidy(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
+        {
+            return 0.5 * M_PI * index_2 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
+        }
+
+        const double DeformationField::dphidz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
+        {
+            return 0.5 * M_PI * index_3 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
+        }
+
+        const std::vector<BasisIndices> DeformationField::GenerateBasisIndices(const uint32_t &max_number_of_velocity_basis)
+        {
+            std::vector<BasisIndices> basis_indices;
+            for(uint32_t i = 1;i <= max_number_of_velocity_basis;++i)
             {
-                for(unsigned int j = 0;j < number_of_basis_functions_per_dimension;++j)
+                for(uint32_t j = 1;j <= max_number_of_velocity_basis;++j)
                 {
-                    for(unsigned int k = 0;k < number_of_basis_functions_per_dimension;++k)
+                    for(uint32_t k = 1;k <= max_number_of_velocity_basis;++k)
                     {
-                        basis_functions.emplace_back(Indices(i,j,k));
+                        BasisIndices base_index;
+                        base_index.index_1 = i;
+                        base_index.index_2 = j;
+                        base_index.index_3 = k;
+                        double eigen_val = -std::pow(M_PI,2) * (std::pow(i,2) + std::pow(j,2) + std::pow(k,2));
+                        base_index.eigen_value = eigen_val;
+                        
+                        basis_indices.emplace_back(base_index);
                     }
                 }
             }
 
-            std::sort(basis_functions.begin(), basis_functions.end(), [&](const auto& a, const auto& b) {
-            return sum_of_squares(a) > sum_of_squares(b);});
-
-            // Take the top 1000 elements
-            std::vector<adi::deformation_field::Indices> top_1000(basis_functions.begin(), basis_functions.begin() + 1000);
-
-            return top_1000;
+            return basis_indices;
         }
 
-        std::vector<double> getDeformationFieldCoefficients(const unsigned int number_of_coefficients_for_df)
+        const double DeformationField::ObtainCoefficientOfVelocityField(const double eigen_value)
         {
-            std::vector<double> coefficients_of_df;
-            for(unsigned int i = 0;i < number_of_coefficients_for_df;++i)
+            const double mean = 0.0;
+            const double stddev = eigen_value;
+
+            // Create a random number generator and a normal distribution object
+            std::random_device rd;  // Random device for seeding
+            std::mt19937 gen(rd()); // Mersenne Twister generator seeded with rd()
+            std::normal_distribution<> d(mean, stddev);
+
+            // Generate a sample from the normal distribution
+            double sample = d(gen);
+
+            return sample;
+        }
+
+        std::vector<Eigen::Vector3d> DeformationField::computeVelocityField()
+        {
+            std::vector<Eigen::Vector3d> velocity_field;
+            const double grid_spacing = DOMAIN_LENGTH / (m_number_of_grid_points - 1);
+            std::vector<BasisIndices> base_indices = GenerateBasisIndices(MAX_NUMBER_OF_VELOCITY_BASIS);
+            for(uint32_t i = 0;i < m_number_of_grid_points;++i)
             {
-                coefficients_of_df.emplace_back(0.0);
-            }
-            return coefficients_of_df;
-        }
-
-        deformationField::deformationField(const std::vector<std::pair<adi::Point, adi::Point>> &correspondences) : m_correspondences(correspondences)
-        {
-            m_deformation_field_coefficients = getDeformationFieldCoefficients(100);
-            m_basis_functions = getBasisFunctions(3000);
-        }
-        
-        const double deformationField::computeMeanEucledianDistance()
-        {
-            double mean_eucledian_distance = 0;
-            for(unsigned int i = 0;i < m_correspondences.size();++i)
-            {
-                mean_eucledian_distance += (m_correspondences[i].first.s_point - m_correspondences[i].second.s_point).norm();
-            }
-            return mean_eucledian_distance / m_correspondences.size();
-        }
-
-        const double deformationField::computeMeanDescriptorDistance()
-        {
-            double mean_descriptor_distance = 0;
-            for(unsigned int i = 0;i < m_correspondences.size();++i)
-            {
-                mean_descriptor_distance += utilities::computeL2Norm(m_correspondences[i].first.s_descriptor, m_correspondences[i].second.s_descriptor);
-            }
-            return mean_descriptor_distance / m_correspondences.size();
-        }
-
-        const Eigen::MatrixXd deformationField::computeMetricDistance(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud)
-        {
-            Eigen::MatrixXd metric_distance = Eigen::MatrixXd::Zero(source_point_cloud.size(), source_point_cloud.size());
-            const double mean_eucledian_distance = this->computeMeanEucledianDistance();
-            const double mean_descriptor_distance = this->computeMeanDescriptorDistance();
-            const double factor = mean_eucledian_distance / mean_descriptor_distance;
-
-            for(unsigned int i = 0;i < source_point_cloud.size();++i)
-            {
-                for(unsigned int j = 0;j < target_point_cloud.size();++j)
+                double x = i * grid_spacing;
+                for(uint32_t j = 0;j < m_number_of_grid_points;++j)
                 {
-                    const double local_eucledian_distance = (source_point_cloud[i].s_point - target_point_cloud[j].s_point).norm();
-                    const double local_descriptor_distance = utilities::computeL2Norm(source_point_cloud[i].s_descriptor, target_point_cloud[j].s_descriptor);
-                    metric_distance(i,j) = local_eucledian_distance + factor * local_descriptor_distance;
+                    double y = j * grid_spacing;
+                    for(uint32_t k = 0;k<m_number_of_grid_points;++k)
+                    {
+                        double z = k * grid_spacing;
+
+                        // Initialize velocity components
+                        double vx_sum = 0.0, vy_sum = 0.0, vz_sum = 0.0;
+                        Eigen::Vector3d velocity_field_per_point;
+                        for(uint32_t b = 0;b < base_indices.size();++b)
+                        {
+                            auto base_index = base_indices[b];
+
+                            // Compute partial derivatives of the eigenfunction phi
+                            double dphi_dx = dphidx(base_index.index_1, base_index.index_2, base_index.index_3, x, y, z);
+                            double dphi_dy = dphidy(base_index.index_1, base_index.index_2, base_index.index_3, x, y, z);
+                            double dphi_dz = dphidz(base_index.index_1, base_index.index_2, base_index.index_3, x, y, z);
+
+                            // Basis function velocities
+                            double v1x = 0, v1y = dphi_dz, v1z = -dphi_dy;
+                            double v2x = -dphi_dz, v2y = 0, v2z = dphi_dx;
+                            double v3x = dphi_dy, v3y = -dphi_dx, v3z = 0;
+
+                            const double coeff_ak = ObtainCoefficientOfVelocityField(base_index.eigen_value);
+
+                            vx_sum += coeff_ak * (v1x + v2x + v3x);
+                            vy_sum += coeff_ak * (v1y + v2y + v3y);
+                            vz_sum += coeff_ak * (v1z + v2z + v3z);
+                        }
+                        velocity_field_per_point.x() = vx_sum;
+                        velocity_field_per_point.y() = vy_sum;
+                        velocity_field_per_point.z() = vz_sum;
+
+                        velocity_field.emplace_back(velocity_field_per_point);
+                    }
                 }
             }
-
-            return metric_distance;
+            return velocity_field;
         }
 
-        const std::vector<double> deformationField::computGradientOfBasisFunctions(const std::vector<adi::Point> &point_cloud, const std::vector<Indices> &indices_for_basis_function_computation, const unsigned int &dimension)
-        {
-            std::vector<double> gradient_of_basis_functions;
-            gradient_of_basis_functions.reserve(point_cloud.size());
-
-            const unsigned int k = dimension;
-            const unsigned int l = (k + 1) % 3;
-            const unsigned int m = (k + 2) % 3;
-            for(unsigned int i = 0;i < point_cloud.size();++i)
-            {
-                for(unsigned int j = 0;j < indices_for_basis_function_computation.size();++j)
-                {
-                    double result;
-                    if(dimension %3 == 0)
-                        result = std::pow(0.5,3) * M_PI * indices_for_basis_function_computation[j].s_x * std::cos(M_PI * point_cloud[i].s_point[k] * indices_for_basis_function_computation[j].s_x) * std::sin(M_PI * point_cloud[i].s_point[l] * indices_for_basis_function_computation[j].s_y) * std::sin(M_PI * point_cloud[i].s_point[m] * indices_for_basis_function_computation[j].s_z);
-                    else if (dimension %3 == 1)
-                        result = std::pow(0.5,3) * M_PI * indices_for_basis_function_computation[j].s_y * std::cos(M_PI * point_cloud[i].s_point[k] * indices_for_basis_function_computation[j].s_y) * std::sin(M_PI * point_cloud[i].s_point[l] * indices_for_basis_function_computation[j].s_x) * std::sin(M_PI * point_cloud[i].s_point[m] * indices_for_basis_function_computation[j].s_z);
-                    else
-                        result = std::pow(0.5,3) * M_PI * indices_for_basis_function_computation[j].s_z * std::cos(M_PI * point_cloud[i].s_point[k] * indices_for_basis_function_computation[j].s_z) * std::sin(M_PI * point_cloud[i].s_point[l] * indices_for_basis_function_computation[j].s_x) * std::sin(M_PI * point_cloud[i].s_point[m] * indices_for_basis_function_computation[j].s_y);
-                    gradient_of_basis_functions.emplace_back(result);
-                }
-            }
-            return gradient_of_basis_functions;
-        }
-        
-        Eigen::MatrixXd deformationField::computeSoftCorrespondences(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud)
-        {
-            Eigen::MatrixXd correspondences = Eigen::MatrixXd::Zero(source_point_cloud.size(), source_point_cloud.size());
-            const Eigen::MatrixXd metric_distance = computeMetricDistance(source_point_cloud, target_point_cloud);
-
-            for(unsigned int i = 0;i < source_point_cloud.size();++i)
-            {
-                for(unsigned int j = 0;j < target_point_cloud.size();++j)
-                {
-                    const double distance = metric_distance(i,j);
-
-                    const double numerator = std::exp((-1/(2 * SIGMA * SIGMA) * distance * distance));
-                    const double denominator = std::exp(metric_distance.row(i).array().sum() * (-1 / (2 * SIGMA * SIGMA))) + std::pow((2 * M_PI * SIGMA * SIGMA), 1.5);
-                    correspondences(i,j) = numerator / denominator;
-                }
-            }
-            return correspondences;
-        }
     }
 }
