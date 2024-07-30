@@ -12,7 +12,7 @@ include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${CERES_INCLUDE_DIRS})
 
 # Create separate executables with their own dependencies
-add_executable(src io.cpp matching.cpp deformation_field.cpp main.cpp numerics.cpp)
+add_executable(src io.cpp matching.cpp deformation_field.cpp numerics.cpp main.cpp)
 
 # Link directories
 target_link_libraries(src PUBLIC ${PCL_LIBRARIES} ${CERES_LIBRARIES})

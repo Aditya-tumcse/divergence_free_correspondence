@@ -17,7 +17,9 @@ namespace adi{
         };
         class DeformationField{
             public:
-                Eigen::Vector3d computeVelocityField(const Eigen::Vector3d &point, const std::vector<BasisIndices> &base_indices);  
+                Eigen::Vector3d computeVelocityField(const Eigen::Vector3d &point, const std::vector<BasisIndices> &base_indices, const Eigen::VectorXd &coeffs_ak);  
+
+                std::tuple<double, double, double> computeVelocityBasisFunctions(const double &coeff_ak, const BasisIndices &base_index, const Eigen::Vector3d &point);
                 
             private:
 
