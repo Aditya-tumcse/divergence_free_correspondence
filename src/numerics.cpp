@@ -7,11 +7,11 @@ namespace adi{
         const std::vector<adi::deformation_field::BasisIndices> GenerateBasisIndices(const uint32_t &max_number_of_velocity_basis)
         {
             std::vector<adi::deformation_field::BasisIndices> basis_indices;
-            for(uint32_t i = 1;i <= max_number_of_velocity_basis / 9;++i)
+            for(uint32_t i = 1;i <= max_number_of_velocity_basis / 3;++i)
             {
-                for(uint32_t j = 1;j <= max_number_of_velocity_basis / 9;++j)
+                for(uint32_t j = 1;j <= max_number_of_velocity_basis / 3;++j)
                 {
-                    for(uint32_t k = 1;k <= max_number_of_velocity_basis / 9;++k)
+                    for(uint32_t k = 1;k <= max_number_of_velocity_basis / 3;++k)
                     {
                         adi::deformation_field::BasisIndices base_index;
                         base_index.index_1 = i;
