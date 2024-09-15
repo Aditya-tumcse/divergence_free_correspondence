@@ -15,7 +15,7 @@ namespace adi{
 
         const std::vector<std::map<double, adi::deformation_field::BasisIndices>> GenerateBaseIndexMap(const std::vector<adi::deformation_field::BasisIndices> &base_indices);
 
-        Eigen::Vector3d RungeKutaIntegration(const Eigen::Vector3d &src_pt, const std::vector<adi::deformation_field::BasisIndices> &basis_indices,const Eigen::VectorXd &coeffs_ak,const double dt);
+        Eigen::Vector3d RungeKutaIntegration(const Eigen::Vector3d &src_pt, const std::vector<adi::deformation_field::BasisIndices> &basis_indices,const Eigen::VectorXd &coeffs_ak,const uint32_t num_time_steps);
     
         Eigen::MatrixXd ComputeJacobian(const std::vector<adi::deformation_field::BasisIndices> &base_indices, const adi::Point &point);
 

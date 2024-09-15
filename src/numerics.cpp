@@ -56,28 +56,31 @@ namespace adi{
             return sample;
         }
 
-        Eigen::Vector3d RungeKutaIntegration(const Eigen::Vector3d &src_pt, const std::vector<adi::deformation_field::BasisIndices> &basis_indices,const Eigen::VectorXd &coeffs_ak,const double dt)
+        Eigen::Vector3d RungeKutaIntegration(const Eigen::Vector3d &src_pt, const std::vector<adi::deformation_field::BasisIndices> &basis_indices,const Eigen::VectorXd &coeffs_ak,const uint32_t num_time_steps)
         {
-            Eigen::Vector3d updated_pt;
-            updated_pt.setZero();
+            Eigen::Vector3d current_pt = src_pt;
+            const double dt = 1.0 / num_time_steps;
+            for(uint32_t i = 0;i < num_time_steps;++i)
+            { 
+                adi::deformation_field::DeformationField df;
 
-            adi::deformation_field::DeformationField df;
+                Eigen::Vector3d k1 = df.computeVelocityField(current_pt, basis_indices, coeffs_ak);
 
-            Eigen::Vector3d k1 = df.computeVelocityField(src_pt, basis_indices, coeffs_ak);
+                Eigen::Vector3d midpoint;
+                midpoint.setZero();
+                midpoint.x() = current_pt.x() + 0.5 * dt * k1.x();
+                midpoint.y() = current_pt.y() + 0.5 * dt * k1.y();
+                midpoint.z() = current_pt.z() + 0.5 * dt * k1.z();
 
-            Eigen::Vector3d midpoint;
-            midpoint.setZero();
-            midpoint.x() = src_pt.x() + 0.5 * dt * k1.x();
-            midpoint.y() = src_pt.y() + 0.5 * dt * k1.y();
-            midpoint.z() = src_pt.z() + 0.5 * dt * k1.z();
+                Eigen::Vector3d k2 = df.computeVelocityField(midpoint, basis_indices, coeffs_ak);
+                
+                current_pt.x() = current_pt.x() + dt * k2.x();
+                current_pt.y() = current_pt.y() + dt * k2.y();
+                current_pt.z() = current_pt.z() + dt * k2.z();
 
-            Eigen::Vector3d k2 = df.computeVelocityField(midpoint, basis_indices, coeffs_ak);
-            
-            updated_pt.x() = src_pt.x() + dt * k2.x();
-            updated_pt.y() = src_pt.y() + dt * k2.y();
-            updated_pt.z() = src_pt.z() + dt * k2.z();
+            }
 
-            return updated_pt;
+            return current_pt;
         }
 
         Eigen::MatrixXd ComputeJacobian(const std::vector<adi::deformation_field::BasisIndices> &base_indices, const adi::Point &point)
