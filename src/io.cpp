@@ -189,33 +189,90 @@ namespace adi{
 
     std::vector<adi::Point> pointCloud::samplePointCloud(const uint32_t max_number_of_points)
     {   
-        assert(max_number_of_points > 1);
-        Eigen::MatrixXd distance_matrix = utilities::computeDistanceMatrix(this->extractPoints(m_point_cloud));
+        // assert(max_number_of_points > 1);
+        // Eigen::MatrixXd distance_matrix = utilities::computeDistanceMatrix(this->extractPoints(m_point_cloud));
+        // std::vector<adi::Point> subsampled_point_cloud;
+        // subsampled_point_cloud.reserve(max_number_of_points);
+
+        // std::vector<adi::Point> og_point_cloud_copy = m_point_cloud;
+        // if(m_point_cloud.size() != 0){
+        //     int random_index = std::rand() % m_point_cloud.size();
+        //     adi::Point anchor_point = og_point_cloud_copy[random_index];
+        //     subsampled_point_cloud.emplace_back(anchor_point);
+        //     for(int i = 0;i < max_number_of_points - 1;++i)
+        //     {
+        //         const int row_id = random_index;
+        //         const double farthest_point_pt = distance_matrix.row(row_id).maxCoeff();
+        //         const int index_of_farthest_point = this->getColumnIdOfTheFarthestSample(distance_matrix.row(row_id));
+        //         const adi::Point farthest_point = og_point_cloud_copy[index_of_farthest_point];
+        //         subsampled_point_cloud.emplace_back(farthest_point);
+        //         distance_matrix.row(row_id).setConstant(-100);
+        //         distance_matrix.col(row_id).setConstant(-100);
+        //         std::swap(og_point_cloud_copy[index_of_farthest_point], og_point_cloud_copy.back());
+        //         og_point_cloud_copy.pop_back();
+        //         random_index = index_of_farthest_point;
+        //     }
+        // }
+        // else{
+        //     std::cout << "Input point cloud is empty" << std::endl;
+        // }
+        // return subsampled_point_cloud;
+
+        if (max_number_of_points == 0) {
+            return std::vector<adi::Point>();
+        }
+
+        // Create a unique pointer for the subsampled point cloud
         std::vector<adi::Point> subsampled_point_cloud;
         subsampled_point_cloud.reserve(max_number_of_points);
 
-        std::vector<adi::Point> og_point_cloud_copy = m_point_cloud;
-        if(m_point_cloud.size() != 0){
+        if (m_point_cloud.size() >= max_number_of_points) {
+            // Initialize variables
+            std::vector<bool> is_sampled(m_point_cloud.size(), false);
+            std::vector<double> min_distances(m_point_cloud.size(), std::numeric_limits<double>::max());
+
+            // Randomly pick the first point
             int random_index = std::rand() % m_point_cloud.size();
-            adi::Point anchor_point = og_point_cloud_copy[random_index];
-            subsampled_point_cloud.emplace_back(anchor_point);
-            for(int i = 0;i < max_number_of_points - 1;++i)
-            {
-                const int row_id = random_index;
-                const double farthest_point_pt = distance_matrix.row(row_id).maxCoeff();
-                const int index_of_farthest_point = this->getColumnIdOfTheFarthestSample(distance_matrix.row(row_id));
-                const adi::Point farthest_point = og_point_cloud_copy[index_of_farthest_point];
-                subsampled_point_cloud.emplace_back(farthest_point);
-                distance_matrix.row(row_id).setConstant(-100);
-                distance_matrix.col(row_id).setConstant(-100);
-                std::swap(og_point_cloud_copy[index_of_farthest_point], og_point_cloud_copy.back());
-                og_point_cloud_copy.pop_back();
-                random_index = index_of_farthest_point;
+            subsampled_point_cloud.push_back(m_point_cloud[random_index]);
+            is_sampled[random_index] = true;
+
+            // Update distances for the first point
+            std::priority_queue<std::pair<double, size_t>, std::vector<std::pair<double, size_t>>, FarthestPointComparator> max_heap;
+            for (size_t j = 0; j < m_point_cloud.size(); ++j) {
+            if (j != random_index) {
+                min_distances[j] = (m_point_cloud[j].s_point - m_point_cloud[random_index].s_point).norm();
+                max_heap.emplace(min_distances[j], j);
             }
+            }
+
+            // Iteratively sample the farthest points
+            for (size_t i = 1; i < max_number_of_points; ++i) {
+            // Find the farthest point using the max-heap
+            size_t farthest_index;
+            do {
+                farthest_index = max_heap.top().second;
+                max_heap.pop();
+            } while (is_sampled[farthest_index]);  // Ensure we pick an unsampled point
+
+            subsampled_point_cloud.push_back(m_point_cloud[farthest_index]);
+            is_sampled[farthest_index] = true;
+
+            // Update the minimum distances and max-heap for remaining points
+            const Eigen::Vector3d &new_sampled_point = m_point_cloud[farthest_index].s_point;
+            for (size_t j = 0; j < m_point_cloud.size(); ++j) {
+                if (!is_sampled[j]) {
+                double distance = (m_point_cloud[j].s_point - new_sampled_point).norm();
+                if (distance < min_distances[j]) {
+                    min_distances[j] = distance;
+                    max_heap.emplace(min_distances[j], j);  // Push updated distance into heap
+                }
+                }
+            }
+            }
+
+            return subsampled_point_cloud;
+        } else {
+            return m_point_cloud;
         }
-        else{
-            std::cout << "Input point cloud is empty" << std::endl;
-        }
-        return subsampled_point_cloud;
     }
 }

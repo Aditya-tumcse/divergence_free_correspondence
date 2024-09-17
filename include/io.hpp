@@ -8,6 +8,7 @@
 #include <pcl/features/shot_omp.h>
 #include <pcl/features/normal_3d.h>
 #include <Eigen/Dense>
+#include <queue>
 
 namespace adi{
 
@@ -21,6 +22,13 @@ struct Point{
     Point(Eigen::Vector3d point, Eigen::Vector3d normal, std::array<double, 352> descriptor) : s_point(point), s_normal(normal), s_descriptor(descriptor) {}
 
     pcl::SHOT352 convertToPCLDescriptor();
+};
+
+// Comparator for priority queue (max heap)
+struct FarthestPointComparator {
+  bool operator()(const std::pair<double, size_t> &a, const std::pair<double, size_t> &b) {
+    return a.first < b.first; // max heap based on distance
+  }
 };
 
 class pointCloud{
