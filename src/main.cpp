@@ -6,12 +6,14 @@
 
 int main()
 {
-    const std::string source_input_cloud_path = "/home/aditya/Documents/example.ply";
-    const std::string target_input_cloud_path = "";
+    const std::string source_input_cloud_path = "/home/aditya/Downloads/MPI-FAUST/training/registrations/tr_reg_000.ply";
+    const std::string target_input_cloud_path = "/home/aditya/Downloads/MPI-FAUST/training/registrations/tr_reg_002.ply";
     
     // get the source and target point cloud
     auto source_input_cloud = adi::pointCloud(source_input_cloud_path, SEARCH_RADIUS);
+    std::cout << "Size of input point cloud: " << source_input_cloud.getSize() << std::endl;
     auto target_input_cloud = adi::pointCloud(target_input_cloud_path, SEARCH_RADIUS);
+    std::cout << "Size of target point cloud: " << target_input_cloud.getSize() << std::endl;
 
     // downsample the point clouds
     auto source_downsampled_cloud = source_input_cloud.samplePointCloud(NUMBER_OF_SAMPLE_POINTS);

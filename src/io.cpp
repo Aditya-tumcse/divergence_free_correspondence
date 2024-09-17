@@ -34,32 +34,53 @@ namespace utilities{
         return std::sqrt(sum);
     }
 
-    std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud)
-    {
+    bool isValidDescriptor(const pcl::SHOT352& descriptor) {
+        for (const auto& value : descriptor.descriptor) {
+            if (std::isnan(value) || std::isinf(value)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
+    std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(
+    std::vector<adi::Point> source_point_cloud,
+    std::vector<adi::Point> target_point_cloud)
+    {
         assert(source_point_cloud.size() == target_point_cloud.size());
+        
         std::vector<std::pair<adi::Point, adi::Point>> correspondences;
+        
+        // Convert target point cloud to PCL cloud with SHOT descriptors
         pcl::PointCloud<pcl::SHOT352>::Ptr target_descriptors(new pcl::PointCloud<pcl::SHOT352>);
-        for(adi::Point &point : target_point_cloud)
+        for (adi::Point& point : target_point_cloud)
         {
             target_descriptors->push_back(point.convertToPCLDescriptor());
         }
+
+        // Create a KdTree for descriptor matching
         pcl::KdTreeFLANN<pcl::SHOT352> kdtree;
         kdtree.setInputCloud(target_descriptors);
 
-        // Find correspondence
-        for(auto &source_point : source_point_cloud)
+        // Find correspondences
+        for (adi::Point& source_point : source_point_cloud)
         {
             pcl::SHOT352 source_descriptor = source_point.convertToPCLDescriptor();
+            if (!isValidDescriptor(source_descriptor)) {
+            std::cerr << "Invalid source descriptor." << std::endl;
+            continue;
+            }
             std::vector<int> nn_indices(1);
             std::vector<float> nn_distances(1);
-
-            if(kdtree.nearestKSearch(source_descriptor, 1, nn_indices, nn_distances) > 0)
+            
+            // Perform nearest neighbor search
+            if (kdtree.nearestKSearch(source_descriptor, 1, nn_indices, nn_distances) > 0)
             {
                 int target_index = nn_indices[0];
-                correspondences.emplace_back(std::make_pair(source_point, target_point_cloud[target_index]));
+                correspondences.push_back(std::make_pair(source_point, target_point_cloud[target_index]));
             }
         }
+
         return correspondences;
     }
 }
@@ -79,7 +100,9 @@ namespace adi{
 
     pointCloud::pointCloud(const std::string &point_cloud_path, const double &search_radius){
         pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud = this->readPointCloud(point_cloud_path);
+        std::cout << "Size of pointcloud after loading: " << point_cloud->size() << std::endl;
         this->computeShotFeatures(point_cloud, search_radius);
+        std::cout << "SHOT features computed" << std::endl;
     }
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud::readPointCloud(const std::string &point_cloud_path)
@@ -123,46 +146,66 @@ namespace adi{
 
     void pointCloud::computeShotFeatures(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const double &search_radius)
     {
-       pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals = this->normalEstimation(cloud, search_radius); 
-       if(cloud_with_normals->points.size() == 0)
-       {
-        std::exit(EXIT_FAILURE);
-       } 
-       else{
-        pcl::SHOTEstimationOMP<pcl::PointNormal, pcl::PointNormal, pcl::SHOT352> shot;
-        shot.setInputCloud(cloud_with_normals);
-        shot.setInputNormals(cloud_with_normals);
-        pcl::search::KdTree<pcl::PointNormal>::Ptr tree(new pcl::search::KdTree<pcl::PointNormal>());
-        shot.setSearchMethod(tree);
+        // Perform normal estimation
+        pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals = this->normalEstimation(cloud, search_radius);
+        
+        std::cout << "Size of cloud with normals: " << cloud_with_normals->size() << std::endl; 
 
-        //Estimate SHOT descriptors
-        pcl::PointCloud<pcl::SHOT352>::Ptr shot_descriptor(new pcl::PointCloud<pcl::SHOT352>);
-        shot.compute(*shot_descriptor);
-
-        if(cloud_with_normals->size() == shot_descriptor->size())
+        if (cloud_with_normals->empty())
         {
-            for(uint32_t i = 0;i < cloud_with_normals->points.size();++i)
+            std::cerr << "Error: Cloud with normals is empty. Exiting." << std::endl;
+            std::exit(EXIT_FAILURE);
+        } 
+        else
+        {
+            // Set up SHOT feature estimator
+            pcl::SHOTEstimationOMP<pcl::PointNormal, pcl::PointNormal, pcl::SHOT352> shot;
+            shot.setInputCloud(cloud_with_normals);
+            shot.setInputNormals(cloud_with_normals);
+            
+            // Create a KdTree for searching
+            pcl::search::KdTree<pcl::PointNormal>::Ptr tree(new pcl::search::KdTree<pcl::PointNormal>());
+            shot.setSearchMethod(tree);
+
+            // Set the radius for SHOT estimation
+            shot.setRadiusSearch(search_radius);
+
+            // Compute SHOT descriptors
+            pcl::PointCloud<pcl::SHOT352>::Ptr shot_descriptor(new pcl::PointCloud<pcl::SHOT352>);
+            shot.compute(*shot_descriptor);
+
+            // Check if sizes match
+            if (cloud_with_normals->size() != shot_descriptor->size())
+            {
+                std::cerr << "Error: Sizes of cloud with normals and SHOT descriptors do not match." << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+
+            // Store features
+            for (std::size_t i = 0; i < cloud_with_normals->points.size(); ++i)
             {
                 Eigen::Vector3d point, normal;
                 std::array<double, 352> desc{};
-                point[0] = cloud_with_normals->points.at(i).x;
-                point[1] = cloud_with_normals->points.at(i).y;
-                point[2] = cloud_with_normals->points.at(i).z;
-                
-                normal[0] = cloud_with_normals->points.at(i).normal_x;
-                normal[1] = cloud_with_normals->points.at(i).normal_y;
-                normal[2] = cloud_with_normals->points.at(i).normal_z;
+                point[0] = cloud_with_normals->points[i].x;
+                point[1] = cloud_with_normals->points[i].y;
+                point[2] = cloud_with_normals->points[i].z;
 
-                for(uint32_t j = 0;j < shot_descriptor->at(i).descriptorSize();++j)
+                normal[0] = cloud_with_normals->points[i].normal_x;
+                normal[1] = cloud_with_normals->points[i].normal_y;
+                normal[2] = cloud_with_normals->points[i].normal_z;
+
+                // Copy descriptor values
+                for (std::size_t j = 0; j < shot_descriptor->at(i).descriptorSize(); ++j)
                 {
                     desc[j] = shot_descriptor->at(i).descriptor[j];
                 }
 
-                m_point_cloud.emplace_back(Point(point, normal, desc));
+                // Store the point, normal, and descriptor in your data structure
+                m_point_cloud.emplace_back(point, normal, desc);
             }
         }
-       }
     }
+
 
     const std::vector<Eigen::Vector3d> pointCloud::extractPoints(std::vector<adi::Point> point_cl)
     {
