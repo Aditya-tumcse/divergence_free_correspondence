@@ -38,7 +38,7 @@ class pointCloud{
         const std::vector<Point> getPointCloud() const{ return m_point_cloud;}
 
         uint32_t getColumnIdOfTheFarthestSample(const Eigen::RowVectorXd &row);
-        std::vector<Point> samplePointCloud(const uint32_t max_number_of_points);
+        std::unique_ptr<std::vector<Point>> samplePointCloud(const uint32_t max_number_of_points);
 
         const uint32_t getSize() const {return m_point_cloud.size();}
 
@@ -62,7 +62,7 @@ namespace utilities{
 
     bool isValidDescriptor(const pcl::SHOT352& descriptor);
 
-    std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud);
+    std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud);
 
     
 }

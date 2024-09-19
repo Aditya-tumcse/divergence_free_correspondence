@@ -43,13 +43,13 @@ namespace utilities{
         return true;
     }
 
-    std::vector<std::pair<adi::Point, adi::Point>> computeCorrespondences(
+    std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> computeCorrespondences(
     std::vector<adi::Point> source_point_cloud,
     std::vector<adi::Point> target_point_cloud)
     {
         assert(source_point_cloud.size() == target_point_cloud.size());
         
-        std::vector<std::pair<adi::Point, adi::Point>> correspondences;
+        std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> correspondences = std::make_unique<std::vector<std::pair<adi::Point, adi::Point>>>();
         
         // Convert target point cloud to PCL cloud with SHOT descriptors
         pcl::PointCloud<pcl::SHOT352>::Ptr target_descriptors(new pcl::PointCloud<pcl::SHOT352>);
@@ -77,7 +77,7 @@ namespace utilities{
             if (kdtree.nearestKSearch(source_descriptor, 1, nn_indices, nn_distances) > 0)
             {
                 int target_index = nn_indices[0];
-                correspondences.push_back(std::make_pair(source_point, target_point_cloud[target_index]));
+                correspondences->push_back(std::make_pair(source_point, target_point_cloud[target_index]));
             }
         }
 
@@ -230,39 +230,10 @@ namespace adi{
         return maxIndex(vec);
     }
 
-    std::vector<adi::Point> pointCloud::samplePointCloud(const uint32_t max_number_of_points)
+    std::unique_ptr<std::vector<adi::Point>> pointCloud::samplePointCloud(const uint32_t max_number_of_points)
     {   
-        // assert(max_number_of_points > 1);
-        // Eigen::MatrixXd distance_matrix = utilities::computeDistanceMatrix(this->extractPoints(m_point_cloud));
-        // std::vector<adi::Point> subsampled_point_cloud;
-        // subsampled_point_cloud.reserve(max_number_of_points);
-
-        // std::vector<adi::Point> og_point_cloud_copy = m_point_cloud;
-        // if(m_point_cloud.size() != 0){
-        //     int random_index = std::rand() % m_point_cloud.size();
-        //     adi::Point anchor_point = og_point_cloud_copy[random_index];
-        //     subsampled_point_cloud.emplace_back(anchor_point);
-        //     for(int i = 0;i < max_number_of_points - 1;++i)
-        //     {
-        //         const int row_id = random_index;
-        //         const double farthest_point_pt = distance_matrix.row(row_id).maxCoeff();
-        //         const int index_of_farthest_point = this->getColumnIdOfTheFarthestSample(distance_matrix.row(row_id));
-        //         const adi::Point farthest_point = og_point_cloud_copy[index_of_farthest_point];
-        //         subsampled_point_cloud.emplace_back(farthest_point);
-        //         distance_matrix.row(row_id).setConstant(-100);
-        //         distance_matrix.col(row_id).setConstant(-100);
-        //         std::swap(og_point_cloud_copy[index_of_farthest_point], og_point_cloud_copy.back());
-        //         og_point_cloud_copy.pop_back();
-        //         random_index = index_of_farthest_point;
-        //     }
-        // }
-        // else{
-        //     std::cout << "Input point cloud is empty" << std::endl;
-        // }
-        // return subsampled_point_cloud;
-
         if (max_number_of_points == 0) {
-            return std::vector<adi::Point>();
+            return std::make_unique<std::vector<adi::Point>>();
         }
 
         // Create a unique pointer for the subsampled point cloud
@@ -313,9 +284,9 @@ namespace adi{
             }
             }
 
-            return subsampled_point_cloud;
+            return std::make_unique<std::vector<Point>>(std::move(subsampled_point_cloud));
         } else {
-            return m_point_cloud;
+            return std::make_unique<std::vector<Point>>(std::move(m_point_cloud));
         }
     }
 }
