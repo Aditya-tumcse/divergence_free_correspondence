@@ -6,8 +6,8 @@
 
 int main()
 {
-    const std::string source_input_cloud_path = "../data/tr_reg_000.ply";
-    const std::string target_input_cloud_path = "../data/tr_reg_002.ply";
+    const std::string source_input_cloud_path = "/workspaces/divergence_free_correspondence/data/tr_scan_000.ply";
+    const std::string target_input_cloud_path = "/workspaces/divergence_free_correspondence/data/tr_scan_002.ply";
     
     // get the source and target point cloud
     auto source_input_cloud = adi::pointCloud(source_input_cloud_path, SEARCH_RADIUS);
@@ -34,12 +34,14 @@ int main()
         std::vector<adi::Point> updated_cloud;
         updated_cloud.reserve(source_downsampled_cloud->size());
         for(uint32_t i = 0; i < source_downsampled_cloud->size(); ++i) {
-            Eigen::Vector3d updated_pt =  adi::numerics::RungeKutaIntegration(source_downsampled_cloud->at(i).s_point, base_indices,coeffs_ak, 1000); // Adjust dt as needed
+            Eigen::Vector3d updated_pt =  adi::numerics::RungeKutaIntegration(source_downsampled_cloud->at(i).s_point, base_indices,coeffs_ak, 10); // Adjust dt as needed
             updated_cloud[i].s_point.x() = updated_pt.x();
             updated_cloud[i].s_point.y() = updated_pt.y();
             updated_cloud[i].s_point.z() = updated_pt.z();        
         }
         
+        std::cout << "Completed RK integration" << std::endl;
+
         // E-step : Compute soft correspondences
         auto matches = adi::matching::Matching(*initial_correspondences);
         auto soft_corr_matrix = matches.computeSoftCorrespondences(updated_cloud, *target_downsampled_cloud);
@@ -53,9 +55,19 @@ int main()
 
         coeffs_ak += delta_a;
 
+        std::cout << "Updated coefficients of deformation field for iteration " << iter << std::endl;
         if(delta_a.norm() < TOLERANCE)
+        {
+            std::cout << "Coefficients of deformation field converged" << std::endl;
             break;
+        }
+        iter = iter + 1;
 
+    }
+
+    for(size_t a_k_i = 0;a_k_i < coeffs_ak.size();++a_k_i)
+    {
+        std::cout << coeffs_ak[a_k_i] << std::endl;
     }
     return 0;
 
