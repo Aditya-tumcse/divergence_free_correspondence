@@ -6,8 +6,8 @@
 
 int main()
 {
-    const std::string source_input_cloud_path = "/home/aditya/Downloads/MPI-FAUST/training/registrations/tr_reg_000.ply";
-    const std::string target_input_cloud_path = "/home/aditya/Downloads/MPI-FAUST/training/registrations/tr_reg_002.ply";
+    const std::string source_input_cloud_path = "../data/tr_reg_000.ply";
+    const std::string target_input_cloud_path = "../data/tr_reg_002.ply";
     
     // get the source and target point cloud
     auto source_input_cloud = adi::pointCloud(source_input_cloud_path, SEARCH_RADIUS);
