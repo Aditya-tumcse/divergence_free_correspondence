@@ -1,0 +1,50 @@
+# Use Ubuntu 20.04 as the base image
+FROM ubuntu:20.04
+
+# Set non-interactive mode for apt-get
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update the package list and install essential packages
+# Install ca-certificates to avoid SSL verification errors
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    libboost-all-dev \
+    libusb-1.0-0-dev \
+    libeigen3-dev \
+    libflann-dev \
+    libvtk7-dev \
+    libopenni2-dev \
+    libpcap-dev \
+    libpng-dev \
+    libqhull-dev \
+    libglew-dev \
+    freeglut3-dev \
+    pkg-config \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Eigen (latest version from repository)
+RUN apt-get update && apt-get install -y libeigen3-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Clone the PCL repository
+RUN git clone https://github.com/PointCloudLibrary/pcl.git /pcl
+
+# Create a build directory for PCL
+WORKDIR /pcl
+RUN mkdir build
+WORKDIR /pcl/build
+
+# Build PCL using CMake
+RUN cmake .. \
+    && make -j$(nproc) \
+    && make install \
+    && ldconfig
+
+# Clone your repository
+# Replace <your-repo-url> with the actual Git URL of your repo
+WORKDIR /opt
+COPY ../divergence_free_corr /opt/divergence_free_correspondence
