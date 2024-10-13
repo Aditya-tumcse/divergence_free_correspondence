@@ -1,0 +1,31 @@
+
+FROM div_free_corr_dependencies:latest
+ARG user
+ARG uid=1001
+ARG gid=${uid}
+
+ENV USERNAME ${user}
+
+# Replicate the local user in the container, with same name/uid/gid
+RUN useradd -m $USERNAME && \
+    echo "$USERNAME:$USERNAME" | chpasswd && \
+    usermod --shell /bin/bash $USERNAME && \
+    usermod  --uid ${uid} $USERNAME && \
+    groupmod --gid ${gid} $USERNAME && \
+    usermod -aG sudo $USERNAME
+
+# TODO: Find a better way to handle the groups
+RUN groupadd --gid 1007 data && \
+    usermod -aG data $USERNAME
+
+# Download tools 
+RUN apt-get update && \
+    apt-get install -y wget git screen gdb clang-format bash-completion
+
+WORKDIR /home/${user}
+
+USER ${user}
+
+#Expose ssh port
+EXPOSE 22
+ENTRYPOINT bash

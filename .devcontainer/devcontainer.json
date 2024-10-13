@@ -1,0 +1,35 @@
+{
+	"name": "div_free_corr",
+	"build": {
+		"dockerfile": "../docker/Dockerfile_develop",
+		"args": {
+			"user": "${localEnv:USER}"
+		}
+	},
+	"runArgs": [
+		"--gpus",
+		"all"
+	],
+	"remoteUser": "${localEnv:USER}",
+	"updateRemoteUserUID": true,
+	"mounts": [
+		{
+			"type": "bind",
+			"source": "${localEnv:HOME}/.ssh",
+			"target": "${localEnv:HOME}/.ssh"
+		}
+	],
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				"ms-azuretools.vscode-docker",
+				"ms-toolsai.jupyter",
+				"ms-python.python",
+				"ms-vscode.cpptools-extension-pack",
+				"mhutchie.git-graph",
+				"Gruntfuggly.todo-tree"
+			]
+		}
+	}
+}
