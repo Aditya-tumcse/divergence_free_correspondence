@@ -3,6 +3,7 @@
 
 #include<array>
 #include <pcl/io/ply_io.h>
+#include <pcl/point_cloud.h>
 #include <pcl/common/io.h>
 #include <pcl/point_types.h>
 #include <pcl/features/shot_omp.h>
@@ -21,35 +22,44 @@ struct Point{
 
     Point(Eigen::Vector3d point, Eigen::Vector3d normal, std::array<double, 352> descriptor) : s_point(point), s_normal(normal), s_descriptor(descriptor) {}
 
-    pcl::SHOT352 convertToPCLDescriptor();
-};
+    Point(pcl::PointXYZ point) : s_normal(0.0,0.0,0.0), s_descriptor{}{
+      s_point.x() = point.x;
+      s_point.y() = point.y;
+      s_point.z() = point.z;
+    }
 
-// Comparator for priority queue (max heap)
-struct FarthestPointComparator {
-  bool operator()(const std::pair<double, size_t> &a, const std::pair<double, size_t> &b) {
-    return a.first < b.first; // max heap based on distance
-  }
+    pcl::SHOT352 convertToPCLDescriptor();
 };
 
 class pointCloud{
     public:
-        pointCloud(const std::string &point_cloud_path, const double &search_radius);
+        pointCloud(const std::string &point_cloud_path);
+
+        pointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &source_cloud);
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr loadPlyFile(const std::string &cloud_file_path);
+
+        void setPointCloud(const std::unique_ptr<std::vector<Point>> cloud);
+
+        void computeShotFeatures(const double &search_radius);
 
         const std::vector<Point> getPointCloud() const{ return m_point_cloud;}
 
-        uint32_t getColumnIdOfTheFarthestSample(const Eigen::RowVectorXd &row);
-        std::unique_ptr<std::vector<Point>> samplePointCloud(const uint32_t max_number_of_points);
+        void samplePointCloud(const uint32_t max_number_of_points);
 
         const uint32_t getSize() const {return m_point_cloud.size();}
 
+        ~pointCloud() = default;
+
     private:
         std::vector<Point> m_point_cloud; 
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr toPclCloud();
         
-        pcl::PointCloud<pcl::PointXYZ>::Ptr readPointCloud(const std::string &point_cloud_path);
+        void loadPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &point_cloud);
+
         pcl::PointCloud<pcl::PointNormal>::Ptr normalEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud, const double &search_radius);
-        void computeShotFeatures(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_with_normals, const double &search_radius);
         
-        const std::vector<Eigen::Vector3d> extractPoints(std::vector<adi::Point> points);
 };
 }
 

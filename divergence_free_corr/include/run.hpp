@@ -7,6 +7,6 @@
 #include "numerics.hpp"
 #include "matching.hpp"
 
-void run(const std::string &source_cloud_path, const std::string &target_cloud_path);
+void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud);
 
 #endif
