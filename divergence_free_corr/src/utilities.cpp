@@ -65,7 +65,7 @@ namespace utilities{
         {
             pcl::SHOT352 source_descriptor = source_point.convertToPCLDescriptor();
             if (!isValidDescriptor(source_descriptor)) {
-            std::cerr << "Invalid source descriptor." << std::endl;
+            //std::cerr << "Invalid source descriptor." << std::endl;
             continue;
             }
             std::vector<int> nn_indices(1);

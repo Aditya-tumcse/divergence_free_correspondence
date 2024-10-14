@@ -35,41 +35,17 @@ namespace adi{
                  */
                 const double phi(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
                 
-                /**
-                 * @brief Function to compute partial derivative of scalar potential field with respect to x at every point in the domain
-                 * 
-                 * @param index_1
-                 * @param index_2
-                 * @param index3
-                 * @param x
-                 * @param y
-                 * @param z
-                 */
-                const double dphidx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+                const double d2phidzdy(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
 
-                /**
-                 * @brief Function to compute partial derivative of scalar potential field with respect to y at every point in the domain
-                 * 
-                 * @param index_1
-                 * @param index_2
-                 * @param index3
-                 * @param x
-                 * @param y
-                 * @param z
-                 */
-                const double dphidy(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
-                
-                /**
-                 * @brief Function to compute partial derivative of scalar potential field with respect to z at every point in the domain
-                 * 
-                 * @param index_1
-                 * @param index_2
-                 * @param index3
-                 * @param x
-                 * @param y
-                 * @param z
-                 */
-                const double dphidz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+                const double d2phidydz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+
+                const double d2phidxdz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+
+                const double d2phidzdx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+
+                const double d2phidydx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+
+                const double d2phidxdy(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
         };
     }
 }

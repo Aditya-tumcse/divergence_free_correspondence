@@ -8,37 +8,25 @@ namespace adi{
         const std::vector<adi::deformation_field::BasisIndices> GenerateBasisIndices(const uint32_t &max_number_of_velocity_basis)
         {
             std::vector<adi::deformation_field::BasisIndices> basis_indices;
-            for(uint32_t i = 1;i <= max_number_of_velocity_basis / 3;++i)
+            for(uint32_t i = 1;i <= max_number_of_velocity_basis;++i)
             {
-                for(uint32_t j = 1;j <= max_number_of_velocity_basis / 3;++j)
+                for(uint32_t j = 1;j <= max_number_of_velocity_basis;++j)
                 {
-                    for(uint32_t k = 1;k <= max_number_of_velocity_basis / 3;++k)
+                    for(uint32_t k = 1;k <= max_number_of_velocity_basis;++k)
                     {
                         adi::deformation_field::BasisIndices base_index;
                         base_index.index_1 = i;
                         base_index.index_2 = j;
                         base_index.index_3 = k;
-                        double eigen_val = -std::pow(M_PI,2) * (std::pow(i,2) + std::pow(j,2) + std::pow(k,2));
+                        double eigen_val = std::pow((std::pow(M_PI,2) * (std::pow(i,2) + std::pow(j,2) + std::pow(k,2))),-1.5);
                         base_index.eigen_value = eigen_val;
                         
-                        basis_indices.emplace_back(base_index);
+                        basis_indices.push_back(base_index);
                     }
                 }
             }
 
             return basis_indices;
-        }
-
-        //TODO: Figure why this is being done
-        const std::vector<std::map<double, adi::deformation_field::BasisIndices>> GenerateBaseIndexMap(const std::vector<adi::deformation_field::BasisIndices> &base_indices)
-        {
-            std::vector<std::map<double, adi::deformation_field::BasisIndices>> base_index_map;
-            for(uint32_t i = 0;i < base_indices.size();++i)
-            {
-                std::map<double, adi::deformation_field::BasisIndices> base_id_map;
-                base_id_map.insert(std::make_pair(0,base_indices.at(i)));
-            }
-            return base_index_map;
         }
 
         const double ObtainCoefficientOfVelocityField(const double eigen_value)
@@ -61,6 +49,8 @@ namespace adi{
         {
             Eigen::Vector3d current_pt = src_pt;
             const double dt = 1.0 / num_time_steps;
+
+            std::cout << "Size of each time step: " << dt << std::endl;
 
             #pragma omp parallel
             {

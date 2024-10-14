@@ -6,7 +6,8 @@ const uint32_t NUMBER_OF_SAMPLE_POINTS = 3000;
 constexpr double SIGMA = 0.01;
 const double DOMAIN_LENGTH = 1.0;
 const uint32_t MAX_NUMBER_OF_VELOCITY_BASIS = 100;
-const uint32_t MAX_NUMBER_OF_ITERS = 10;
+const uint32_t MAX_NUMBER_OF_ITERS = 100;
+const uint32_t NUMBER_OF_TIME_STEPS = 10;
 const double TOLERANCE = 1e-06;
 constexpr double r0 = 0.01;
 

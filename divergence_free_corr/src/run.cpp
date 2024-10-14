@@ -35,7 +35,7 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
         std::vector<adi::Point> updated_cloud;
         updated_cloud.reserve(source_downsampled_cloud.size());
         for(uint32_t i = 0; i < source_downsampled_cloud.size(); ++i) {
-            Eigen::Vector3d updated_pt =  adi::numerics::RungeKutaIntegration(source_downsampled_cloud.at(i).s_point, base_indices,coeffs_ak, 10); // Adjust dt as needed
+            Eigen::Vector3d updated_pt =  adi::numerics::RungeKutaIntegration(source_downsampled_cloud.at(i).s_point, base_indices,coeffs_ak, NUMBER_OF_TIME_STEPS); // Adjust dt as needed
             updated_cloud[i].s_point.x() = updated_pt.x();
             updated_cloud[i].s_point.y() = updated_pt.y();
             updated_cloud[i].s_point.z() = updated_pt.z();        

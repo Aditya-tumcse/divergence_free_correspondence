@@ -21,11 +21,15 @@ namespace adi{
 
     void pointCloud::setPointCloud(const std::unique_ptr<std::vector<Point>> cloud){
         m_point_cloud.clear();
+        m_point_cloud.reserve(cloud->size());
         for(size_t i = 0;i < cloud->size();++i)
-        {
-            m_point_cloud.at(i).s_point.x() = cloud->at(i).s_point.x();
-            m_point_cloud.at(i).s_point.y() = cloud->at(i).s_point.y();
-            m_point_cloud.at(i).s_point.z() = cloud->at(i).s_point.z();
+        {   
+            Point pt;
+            pt.s_point.x() = cloud->at(i).s_point.x();
+            pt.s_point.y() = cloud->at(i).s_point.y();
+            pt.s_point.z() = cloud->at(i).s_point.z();
+
+            m_point_cloud.push_back(pt);
         }
     }
 
@@ -117,9 +121,12 @@ namespace adi{
         cloud->reserve(m_point_cloud.size());
         for(size_t i = 0;i < m_point_cloud.size();++i)
         {
-            cloud->points.at(i).x = m_point_cloud.at(i).s_point.x();
-            cloud->points.at(i).y = m_point_cloud.at(i).s_point.y();
-            cloud->points.at(i).z = m_point_cloud.at(i).s_point.z();
+            pcl::PointXYZ pcl_pt;
+            pcl_pt.x = m_point_cloud.at(i).s_point.x();
+            pcl_pt.y = m_point_cloud.at(i).s_point.y();
+            pcl_pt.z = m_point_cloud.at(i).s_point.z();
+
+            cloud->push_back(pcl_pt);
         }
 
         return cloud;
@@ -130,9 +137,11 @@ namespace adi{
        m_point_cloud.reserve(point_cloud->size());
        for(size_t i = 0;i < point_cloud->size();++i)
        {    
-            m_point_cloud.at(i).s_point.x() = point_cloud->at(i).x;
-            m_point_cloud.at(i).s_point.y() = point_cloud->at(i).y;
-            m_point_cloud.at(i).s_point.z() = point_cloud->at(i).z;
+            Point pt;
+            pt.s_point.x() = point_cloud->at(i).x;
+            pt.s_point.y() = point_cloud->at(i).y;
+            pt.s_point.z() = point_cloud->at(i).z;
+            m_point_cloud.push_back(pt);
        }
     }
 

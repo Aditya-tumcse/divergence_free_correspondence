@@ -1,4 +1,5 @@
 #include "matching.hpp"
+#include "utilities.hpp"
 #include "constants.hpp"
 
 namespace adi{
