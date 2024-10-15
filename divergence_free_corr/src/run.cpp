@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include "run.hpp"
 
 void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
@@ -5,9 +7,6 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     // downsample the point clouds
     source_cloud->samplePointCloud(NUMBER_OF_SAMPLE_POINTS);
     target_cloud->samplePointCloud(NUMBER_OF_SAMPLE_POINTS);
-
-    std::cout << "Size of source point cloud after downsampling : " << source_cloud->getSize() << std::endl;
-    std::cout << "Size of target point cloud after downsampling : " << target_cloud->getSize() << std::endl;
    
     // Compute features
     source_cloud->computeShotFeatures(SEARCH_RADIUS);
@@ -19,6 +18,9 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     // get downsampled cloud with features
     std::vector<adi::Point> source_downsampled_cloud = source_cloud->getPointCloud();
     std::vector<adi::Point> target_downsampled_cloud = target_cloud->getPointCloud();
+
+    std::cout << "Size of source cloud for processing: " << source_downsampled_cloud.size() << std::endl;
+    std::cout << "Size of target clou for processing: " << target_downsampled_cloud.size() << std::endl;
 
     // Compute initial correspondence based on SHOT features
     std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> initial_correspondences = utilities::computeCorrespondences(source_downsampled_cloud, target_downsampled_cloud);
@@ -34,8 +36,14 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
         // Update point cloud Y with the current deformation field
         std::vector<adi::Point> updated_cloud;
         updated_cloud.reserve(source_downsampled_cloud.size());
+
+        std::cout << "Starting RK2 integration" << std::endl;
         for(uint32_t i = 0; i < source_downsampled_cloud.size(); ++i) {
+            auto start = std::chrono::high_resolution_clock::now();
             Eigen::Vector3d updated_pt =  adi::numerics::RungeKutaIntegration(source_downsampled_cloud.at(i).s_point, base_indices,coeffs_ak, NUMBER_OF_TIME_STEPS); // Adjust dt as needed
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+            std::cout << "Time taken for RK integration for point ID: " << i << " : " << duration.count() << std::endl;
+            std::cout << "Updated point at index: " << i << " : (" << updated_pt.x() << " , " << updated_pt.y() << " , " << updated_pt.z() << " ) " << std::endl;
             updated_cloud[i].s_point.x() = updated_pt.x();
             updated_cloud[i].s_point.y() = updated_pt.y();
             updated_cloud[i].s_point.z() = updated_pt.z();        

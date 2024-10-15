@@ -15,11 +15,14 @@ namespace adi{
             uint32_t index_3;
             double eigen_value;
         };
+
+        void* VelocityBasisWorker(void *arg);
+         
         class DeformationField{
             public:
                 Eigen::Vector3d computeVelocityField(const Eigen::Vector3d &point, const std::vector<BasisIndices> &base_indices, const Eigen::VectorXd &coeffs_ak);  
 
-                std::tuple<double, double, double> computeVelocityBasisFunctions(const double &coeff_ak, const BasisIndices &base_index, const Eigen::Vector3d &point);
+                Eigen::Vector3d computeVelocityBasisFunctions(const double &coeff_ak, const BasisIndices &base_index, const Eigen::Vector3d &point);
                 
             private:
 
@@ -70,6 +73,16 @@ namespace adi{
                  * @param z
                  */
                 const double dphidz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+        };
+
+        struct VelThreadData{
+            uint32_t start_index;
+            uint32_t end_index;
+            const std::vector<BasisIndices>* basis_indices;
+            const Eigen::Vector3d* point;
+            const Eigen::VectorXd* coeffs_ak;
+            DeformationField* df;
+            Eigen::Vector3d* point_vel_field;
         };
     }
 }

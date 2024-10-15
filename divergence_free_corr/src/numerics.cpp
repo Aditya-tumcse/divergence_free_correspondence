@@ -52,11 +52,8 @@ namespace adi{
 
             std::cout << "Size of each time step: " << dt << std::endl;
 
-            #pragma omp parallel
-            {
+            
                 Eigen::Vector3d local_current_pt = current_pt;
-
-                #pragma omp for
                 for (uint32_t i = 0; i < num_time_steps; ++i)
                 {
                     adi::deformation_field::DeformationField df;
@@ -71,14 +68,11 @@ namespace adi{
 
                     Eigen::Vector3d k2 = df.computeVelocityField(midpoint, basis_indices, coeffs_ak);
 
-                    #pragma omp critical
-                    {
-                        current_pt.x() += dt * k2.x();
-                        current_pt.y() += dt * k2.y();
-                        current_pt.z() += dt * k2.z();
-                    }
+                    current_pt.x() += dt * k2.x();
+                    current_pt.y() += dt * k2.y();
+                    current_pt.z() += dt * k2.z();
+                    
                 }
-            }
 
             return current_pt;
         }
@@ -91,10 +85,10 @@ namespace adi{
 
             for(uint32_t i = 0;i < base_indices.size();++i)
             {
-                std::tuple<double, double, double> vel_basis_functions = df.computeVelocityBasisFunctions(base_indices[i].eigen_value, base_indices[i], point.s_point);
-                jacobian(0, i) = std::get<0>(vel_basis_functions);
-                jacobian(1, i) = std::get<1>(vel_basis_functions);
-                jacobian(2, i) = std::get<2>(vel_basis_functions);
+                Eigen::Vector3d vel_basis_functions = df.computeVelocityBasisFunctions(base_indices[i].eigen_value, base_indices[i], point.s_point);
+                jacobian(0, i) = vel_basis_functions.x();
+                jacobian(1, i) = vel_basis_functions.y();
+                jacobian(2, i) = vel_basis_functions.z();
             }
 
             return jacobian;
