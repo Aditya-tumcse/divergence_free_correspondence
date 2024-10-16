@@ -30,6 +30,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Eigen (latest version from repository)
 RUN apt-get update && apt-get install -y libeigen3-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install SuiteSparse and CXSparse (dependencies for Ceres)
+RUN apt-get update && apt-get install -y \
+    libsuitesparse-dev \
+    libcxsparse3 \
+    libgoogle-glog-dev \
+    libgflags-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Clone the PCL repository
 RUN git clone https://github.com/PointCloudLibrary/pcl.git /pcl
 
@@ -43,6 +51,19 @@ RUN cmake .. \
     && make -j$(nproc) \
     && make install \
     && ldconfig
+
+# Install Ceres Solver
+RUN mkdir /ceres-solver && \
+    cd /ceres-solver && \
+    git clone https://ceres-solver.googlesource.com/ceres-solver && \
+    mkdir ceres-bin && \
+    cd ceres-solver && \
+    git checkout $(git describe --tags $(git rev-list --tags --max-count=1)) && \
+    cd ../ceres-bin && \
+    cmake ../ceres-solver -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig
 
 # Clone your repository
 # Replace <your-repo-url> with the actual Git URL of your repo

@@ -14,6 +14,7 @@ namespace utilities{
 
     std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud);
 
+    Eigen::MatrixXd toEigenMatrix(const std::vector<adi::Point> &cloud);
     
 }
 #endif //UTILITIES_HPP

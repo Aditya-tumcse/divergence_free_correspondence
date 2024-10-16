@@ -28,6 +28,10 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     // Gauss Newton optimization looop until convergence
     uint32_t iter = 0;
     std::vector<adi::deformation_field::BasisIndices> base_indices = adi::numerics::GenerateBasisIndices(MAX_NUMBER_OF_VELOCITY_BASIS);
+
+    //TODO:precompute the velocity basis functions as a matrix
+
+
     Eigen::VectorXd coeffs_ak;
     coeffs_ak.resize(base_indices.size());
     coeffs_ak.setZero();
@@ -38,17 +42,16 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
         updated_cloud.reserve(source_downsampled_cloud.size());
 
         std::cout << "Starting RK2 integration" << std::endl;
-        for(uint32_t i = 0; i < source_downsampled_cloud.size(); ++i) {
-            auto start = std::chrono::high_resolution_clock::now();
-            Eigen::Vector3d updated_pt =  adi::numerics::RungeKutaIntegration(source_downsampled_cloud.at(i).s_point, base_indices,coeffs_ak, NUMBER_OF_TIME_STEPS); // Adjust dt as needed
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
-            std::cout << "Time taken for RK integration for point ID: " << i << " : " << duration.count() << std::endl;
-            std::cout << "Updated point at index: " << i << " : (" << updated_pt.x() << " , " << updated_pt.y() << " , " << updated_pt.z() << " ) " << std::endl;
-            updated_cloud[i].s_point.x() = updated_pt.x();
-            updated_cloud[i].s_point.y() = updated_pt.y();
-            updated_cloud[i].s_point.z() = updated_pt.z();        
-        }
-        
+        auto start = std::chrono::high_resolution_clock::now();
+        // for(uint32_t i = 0; i < source_downsampled_cloud.size(); ++i) {
+        //     Eigen::Vector3d updated_pt =  adi::numerics::RungeKutaIntegration(source_downsampled_cloud.at(i).s_point, base_indices,coeffs_ak, NUMBER_OF_TIME_STEPS); // Adjust dt as needed
+        //     updated_cloud[i].s_point.x() = updated_pt.x();
+        //     updated_cloud[i].s_point.y() = updated_pt.y();
+        //     updated_cloud[i].s_point.z() = updated_pt.z();        
+        // }
+
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+        std::cout << "Time taken for RK integration for point ID: " << duration.count() << std::endl;
         std::cout << "Completed RK integration" << std::endl;
 
         // E-step : Compute soft correspondences

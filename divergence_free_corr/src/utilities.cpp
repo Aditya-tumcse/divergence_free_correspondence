@@ -81,4 +81,23 @@ namespace utilities{
 
         return correspondences;
     }
+
+    Eigen::MatrixXd toEigenMatrix(const std::vector<adi::Point> &cloud)
+    {
+        Eigen::VectorXd flat_data(cloud.size() * 3);
+
+        // Fill the flat_data vector with individual components (x, y, z) of each point
+        for (size_t i = 0; i < cloud.size(); ++i) {
+            const Eigen::Vector3d &s_point = cloud[i].s_point;
+            flat_data(i * 3) = s_point.x();
+            flat_data(i * 3 + 1) = s_point.y();
+            flat_data(i * 3 + 2) = s_point.z();
+        }
+
+        // Create an Eigen matrix using Eigen::Map
+        Eigen::MatrixXd matrix = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 3>>(flat_data.data(), cloud.size(), 3);
+
+        return matrix; 
+    }
+
 }
