@@ -47,36 +47,72 @@ namespace adi{
             return 0.125 * sin(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
         }
 
-         const double DeformationField::dphidx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
+        Eigen::Tensor<double, 1> DeformationField::dphidx(const BasisIndices basis_indices, const Eigen::MatrixXd &pts)
         {
-            return 0.5 * M_PI * index_1 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
+
+            Eigen::VectorXd dphi_dx;
+            dphi_dx.setZero();
+            dphi_dx = 0.125 * M_PI * basis_indices.index_1 *  (M_PI * basis_indices.index_1 * pts.col(0)).array().cos() * (M_PI * basis_indices.index_2 * pts.col(1)).array().sin() * (M_PI * basis_indices.index_3 * pts.col(2)).array().sin();
+
+            return Eigen::TensorMap<Eigen::Tensor<double,1>>(dphi_dx.data(), dphi_dx.size());
         }
 
-        const double DeformationField::dphidy(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
+        Eigen::Tensor<double, 1> DeformationField::dphidy(const BasisIndices basis_indices, const Eigen::MatrixXd &pts)
         {
-            return 0.5 * M_PI * index_2 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
+            Eigen::VectorXd dphi_dy;
+            dphi_dy.setZero();
+            dphi_dy = 0.125 * M_PI * basis_indices.index_2 *  (M_PI * basis_indices.index_1 * pts.col(0)).array().sin() * (M_PI * basis_indices.index_2 * pts.col(1)).array().cos() * (M_PI * basis_indices.index_3 * pts.col(2)).array().sin();
+
+            return Eigen::TensorMap<Eigen::Tensor<double, 1>>(dphi_dy.data(), dphi_dy.size());
         }
 
-        const double DeformationField::dphidz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
+        Eigen::Tensor<double, 1> DeformationField::dphidz(const BasisIndices basis_indices, const Eigen::MatrixXd &pts)
         {
-            return 0.5 * M_PI * index_3 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
+            Eigen::VectorXd dphi_dz;
+            dphi_dz.setZero();
+            dphi_dz = 0.125 * M_PI * basis_indices.index_3 *  (M_PI * basis_indices.index_1 * pts.col(0)).array().sin() * (M_PI * basis_indices.index_2 * pts.col(1)).array().sin() * (M_PI * basis_indices.index_3 * pts.col(2)).array().cos();
+
+            return Eigen::TensorMap<Eigen::Tensor<double, 1>>(dphi_dz.data(), dphi_dz.size());
         }
 
-        Eigen::Vector3d DeformationField::computeVelocityBasisFunctions(const double &coeff_ak, const BasisIndices &base_index, const Eigen::Vector3d &point)
-        {
-            // Compute partial derivatives of the eigenfunction phi
-            double dphi_dx = dphidx(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
-            double dphi_dy = dphidy(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
-            double dphi_dz = dphidz(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
+        // Eigen::Vector3d DeformationField::computeVelocityBasisFunctions(const double &coeff_ak, const BasisIndices &base_index, const Eigen::MatrixXd &points)
+        // {
+        //     // Compute partial derivatives of the eigenfunction phi
+        //     // double dphi_dx = dphidx(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
+        //     // double dphi_dy = dphidy(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
+        //     // double dphi_dz = dphidz(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
             
-            // Compute the basis functions for the eigen mode (eigen basis)
-            Eigen::Vector3d v1(0,dphi_dz,-dphi_dy);
-            Eigen::Vector3d v2(-dphi_dz, 0, dphi_dx);
-            Eigen::Vector3d v3(dphi_dy, -dphi_dx, 0);
+        //     // // Compute the basis functions for the eigen mode (eigen basis)
+        //     // Eigen::Vector3d v1(0,dphi_dz,-dphi_dy);
+        //     // Eigen::Vector3d v2(-dphi_dz, 0, dphi_dx);
+        //     // Eigen::Vector3d v3(dphi_dy, -dphi_dx, 0);
 
-            Eigen::Vector3d velocity_at_kth_mode = coeff_ak * (v1 + v2 + v3);
+        //     // Eigen::Vector3d velocity_at_kth_mode = coeff_ak * (v1 + v2 + v3);
 
-            return velocity_at_kth_mode;
+        //     // return velocity_at_kth_mode;
+
+        // }
+
+        Eigen::Tensor<double,3> DeformationField::computeVelocityBasisFunctions(const std::vector<BasisIndices> &basis_indices, const Eigen::MatrixXd &points)
+        {
+            Eigen::Tensor<double, 3> vel_basis_functions(points.rows(), basis_indices.size(),9);
+            vel_basis_functions.setZero();
+
+            // Compute vectorized partial derivatives of the eigen function
+            for(uint32_t i = 0;i < basis_indices.size();++i)
+            {
+                vel_basis_functions.chip(i,0) = 0.0;
+                vel_basis_functions.chip(i,1) = dphidz(basis_indices.at(i), points);
+                vel_basis_functions.chip(i,2) = -dphidy(basis_indices.at(i), points);
+                vel_basis_functions.chip(i,3) = -vel_basis_functions.chip(i,1);
+                vel_basis_functions.chip(i,4) = 0.0;
+                vel_basis_functions.chip(i,5) = dphidx(basis_indices.at(i), points);
+                vel_basis_functions.chip(i,6) = -vel_basis_functions.chip(i,2);
+                vel_basis_functions.chip(i,7) = -vel_basis_functions.chip(i,5);
+                vel_basis_functions.chip(i,8) = 0.0;
+            }
+
+            return vel_basis_functions;
         }
 
         Eigen::Vector3d DeformationField::computeVelocityField(const Eigen::Vector3d &point, const std::vector<BasisIndices> &base_indices, const Eigen::VectorXd &coeffs_ak)

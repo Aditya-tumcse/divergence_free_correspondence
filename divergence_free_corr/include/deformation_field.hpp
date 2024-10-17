@@ -4,6 +4,7 @@
 #include "io.hpp"
 
 #include <eigen3/Eigen/Dense>
+#include <eigen3/unsupported/Eigen/CXX11/Tensor>
 #include <cassert>
 
 namespace adi{
@@ -23,6 +24,8 @@ namespace adi{
                 Eigen::Vector3d computeVelocityField(const Eigen::Vector3d &point, const std::vector<BasisIndices> &base_indices, const Eigen::VectorXd &coeffs_ak);  
 
                 Eigen::Vector3d computeVelocityBasisFunctions(const double &coeff_ak, const BasisIndices &base_index, const Eigen::Vector3d &point);
+
+                Eigen::Tensor<double,3> computeVelocityBasisFunctions(const std::vector<BasisIndices> &basis_indices, const Eigen::MatrixXd &points);
                 
             private:
 
@@ -48,7 +51,8 @@ namespace adi{
                  * @param y
                  * @param z
                  */
-                const double dphidx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+                // const double dphidx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+                Eigen::Tensor<double, 1> dphidx(const BasisIndices basis_indices, const Eigen::MatrixXd &pts);
 
                 /**
                  * @brief Function to compute partial derivative of scalar potential field with respect to y at every point in the domain
@@ -60,7 +64,7 @@ namespace adi{
                  * @param y
                  * @param z
                  */
-                const double dphidy(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+                Eigen::Tensor<double, 1> dphidy(const BasisIndices basis_indices, const Eigen::MatrixXd &pts);
                 
                 /**
                  * @brief Function to compute partial derivative of scalar potential field with respect to z at every point in the domain
@@ -72,7 +76,7 @@ namespace adi{
                  * @param y
                  * @param z
                  */
-                const double dphidz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z );
+                Eigen::Tensor<double, 1> dphidz(const BasisIndices basis_indices, const Eigen::MatrixXd &pts);
         };
 
         struct VelThreadData{

@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     libboost-all-dev \
     libusb-1.0-0-dev \
-    libeigen3-dev \
     libflann-dev \
     libvtk7-dev \
     libopenni2-dev \
@@ -24,48 +23,57 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     freeglut3-dev \
     pkg-config \
     ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Eigen (latest version from repository)
-RUN apt-get update && apt-get install -y libeigen3-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install SuiteSparse and CXSparse (dependencies for Ceres)
-RUN apt-get update && apt-get install -y \
     libsuitesparse-dev \
     libcxsparse3 \
     libgoogle-glog-dev \
     libgflags-dev \
+    libatlas-base-dev \
+    libeigen3-dev \ 
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install specific version of Eigen (3.4.0)
+RUN wget -q https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz && \
+    tar -xzf eigen-3.4.0.tar.gz && \
+    cd eigen-3.4.0 && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make install && \
+    cd ../../ && rm -rf eigen-3.4.0.tar.gz eigen-3.4.0
+
+# Install Abseil library (needed for ceres)
+# TODO: See for a workaround for not installing this
+RUN git clone --depth 1 https://github.com/abseil/abseil-cpp.git /abseil && \
+    cd /abseil && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    cd ../.. && rm -rf /abseil
+
 # Clone the PCL repository
-RUN git clone https://github.com/PointCloudLibrary/pcl.git /pcl
+RUN git clone --depth 1 https://github.com/PointCloudLibrary/pcl.git /pcl
 
 # Create a build directory for PCL
-WORKDIR /pcl
-RUN mkdir build
 WORKDIR /pcl/build
 
 # Build PCL using CMake
-RUN cmake .. \
-    && make -j$(nproc) \
-    && make install \
-    && ldconfig
-
-# Install Ceres Solver
-RUN mkdir /ceres-solver && \
-    cd /ceres-solver && \
-    git clone https://ceres-solver.googlesource.com/ceres-solver && \
-    mkdir ceres-bin && \
-    cd ceres-solver && \
-    git checkout $(git describe --tags $(git rev-list --tags --max-count=1)) && \
-    cd ../ceres-bin && \
-    cmake ../ceres-solver -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF && \
+RUN cmake .. && \
     make -j$(nproc) && \
     make install && \
-    ldconfig
+    ldconfig && \
+    cd ../.. && rm -rf /pcl
 
-# Clone your repository
-# Replace <your-repo-url> with the actual Git URL of your repo
+# Install Ceres Solver
+RUN git clone --depth 1 https://ceres-solver.googlesource.com/ceres-solver /ceres-solver && \
+    mkdir /ceres-solver/build && \
+    cd /ceres-solver/build && \
+    cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_CERES_EXAMPLES=OFF -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -Dabsl_VERSION=20210324.0.0 && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    cd ../.. && rm -rf /ceres-solver
+
+# Copy the repo
 WORKDIR /opt
 COPY ../divergence_free_corr /opt/divergence_free_correspondence

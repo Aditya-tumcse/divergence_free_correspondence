@@ -20,7 +20,7 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     std::vector<adi::Point> target_downsampled_cloud = target_cloud->getPointCloud();
 
     std::cout << "Size of source cloud for processing: " << source_downsampled_cloud.size() << std::endl;
-    std::cout << "Size of target clou for processing: " << target_downsampled_cloud.size() << std::endl;
+    std::cout << "Size of target cloud for processing: " << target_downsampled_cloud.size() << std::endl;
 
     // Compute initial correspondence based on SHOT features
     std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> initial_correspondences = utilities::computeCorrespondences(source_downsampled_cloud, target_downsampled_cloud);
@@ -30,7 +30,7 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     std::vector<adi::deformation_field::BasisIndices> base_indices = adi::numerics::GenerateBasisIndices(MAX_NUMBER_OF_VELOCITY_BASIS);
 
     //TODO:precompute the velocity basis functions as a matrix
-
+    
 
     Eigen::VectorXd coeffs_ak;
     coeffs_ak.resize(base_indices.size());
