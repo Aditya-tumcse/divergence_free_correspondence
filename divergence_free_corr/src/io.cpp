@@ -1,6 +1,8 @@
 #include "io.hpp"
+#include "features.hpp"
 
 #include<cassert>
+#include<pcl/features/normal_3d_omp.h>
 
 namespace adi{
 
@@ -57,6 +59,10 @@ namespace adi{
     {
         // convert downsampled cloud into pcl cloud
         pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud =  this->toPclCloud();
+
+        // Clear the member variable
+        m_point_cloud.clear();
+        m_point_cloud.reserve(pcl_cloud->size());
         
         // Perform normal estimation
         pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals = this->normalEstimation(pcl_cloud, search_radius);
@@ -68,21 +74,8 @@ namespace adi{
         } 
         else
         {
-            // Set up SHOT feature estimator
-            pcl::SHOTEstimationOMP<pcl::PointNormal, pcl::PointNormal, pcl::SHOT352> shot;
-            shot.setInputCloud(cloud_with_normals);
-            shot.setInputNormals(cloud_with_normals);
-            
-            // Create a KdTree for searching
-            pcl::search::KdTree<pcl::PointNormal>::Ptr tree(new pcl::search::KdTree<pcl::PointNormal>());
-            shot.setSearchMethod(tree);
-
-            // Set the radius for SHOT estimation
-            shot.setRadiusSearch(search_radius);
-
             // Compute SHOT descriptors
-            pcl::PointCloud<pcl::SHOT352>::Ptr shot_descriptor(new pcl::PointCloud<pcl::SHOT352>);
-            shot.compute(*shot_descriptor);
+            pcl::PointCloud<pcl::SHOT352>::Ptr shot_descriptor = adi::features::computeShotFeatures(cloud_with_normals, search_radius);
 
             // Check if sizes match
             if (cloud_with_normals->size() != shot_descriptor->size())
@@ -151,19 +144,46 @@ namespace adi{
         }
         else{
             pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-            pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;
+            pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> normalEstimation;
+            normalEstimation.setNumberOfThreads(MAX_NUMBER_OF_THREADS);
             normalEstimation.setInputCloud(point_cloud);
-
+            normalEstimation.setRadiusSearch(search_radius);
+            
             pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
             normalEstimation.setSearchMethod(tree);
 
-            pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud< pcl::Normal>);
-            normalEstimation.setRadiusSearch (search_radius);
-            normalEstimation.compute (*normals);
+            pcl::PointXYZ centroid;
+            pcl::computeCentroid<pcl::PointXYZ>(*point_cloud, centroid);
+            normalEstimation.setViewPoint(centroid.x, centroid.y, centroid.z);
+
+            pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud< pcl::Normal>);
+            normalEstimation.compute(*normals);
+
+            for (auto &n : normals->points) {
+                n.normal_x *= -1;
+                n.normal_y *= -1;
+                n.normal_z *= -1;
+            }
 
             pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
-            pcl::concatenateFields(*point_cloud, *normals, *cloud_with_normals);
+            cloud_with_normals->reserve(point_cloud->size());
+            for(size_t i = 0;i < point_cloud->size();++i)
+            {
+                // Skip if the normal contains NaN values
+                if (std::isnan(normals->at(i).normal_x) || std::isnan(normals->at(i).normal_y) || std::isnan(normals->at(i).normal_z)) {
+                    continue;
+                }
 
+                pcl::PointNormal point_normal;
+                point_normal.x = point_cloud->at(i).x;
+                point_normal.y = point_cloud->at(i).y;
+                point_normal.z = point_cloud->at(i).z;
+                point_normal.normal_x = normals->at(i).normal_x;
+                point_normal.normal_y = normals->at(i).normal_y;
+                point_normal.normal_z = normals->at(i).normal_z;
+
+                cloud_with_normals->push_back(point_normal);
+            }
             return cloud_with_normals;
         }
     }

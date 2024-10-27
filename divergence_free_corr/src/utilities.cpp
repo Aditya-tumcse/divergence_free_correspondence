@@ -45,7 +45,7 @@ namespace utilities{
     std::vector<adi::Point> source_point_cloud,
     std::vector<adi::Point> target_point_cloud)
     {
-        //assert(source_point_cloud.size() == target_point_cloud.size());
+        assert(source_point_cloud.size() == target_point_cloud.size());
         
         std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> correspondences = std::make_unique<std::vector<std::pair<adi::Point, adi::Point>>>();
         

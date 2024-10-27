@@ -28,7 +28,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgoogle-glog-dev \
     libgflags-dev \
     libatlas-base-dev \
-    libeigen3-dev \ 
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install specific version of Eigen (3.4.0)
@@ -40,8 +39,7 @@ RUN wget -q https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
     make install && \
     cd ../../ && rm -rf eigen-3.4.0.tar.gz eigen-3.4.0
 
-# Install Abseil library (needed for ceres)
-# TODO: See for a workaround for not installing this
+# Install Abseil library (needed for Ceres)
 RUN git clone --depth 1 https://github.com/abseil/abseil-cpp.git /abseil && \
     cd /abseil && \
     mkdir build && cd build && \
@@ -74,6 +72,9 @@ RUN git clone --depth 1 https://ceres-solver.googlesource.com/ceres-solver /cere
     ldconfig && \
     cd ../.. && rm -rf /ceres-solver
 
-# Copy the repo
+# Install Fastor
+RUN git clone --depth 1 https://github.com/romeric/Fastor.git /opt/Fastor
+
+# Copy the repo (adjust path as necessary)
 WORKDIR /opt
 COPY ../divergence_free_corr /opt/divergence_free_correspondence
