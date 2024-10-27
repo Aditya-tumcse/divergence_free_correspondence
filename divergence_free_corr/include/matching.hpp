@@ -12,13 +12,25 @@ namespace adi{
             public:
                 Matching(const std::vector<std::pair<adi::Point, adi::Point>> &correspondences);
 
+                /**
+                 * @brief Compute soft correspondences that follow GMM
+                 * 
+                 * @param source_point_cloud
+                 * @param target_point_cloud
+                 * 
+                 * @return Eigen matrix of soft correspondences between source and target pointcloud
+                 */
                 Eigen::MatrixXd computeSoftCorrespondences(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud);
+
+                ~Matching() = default;
 
             private:
                 const std::vector<std::pair<adi::Point, adi::Point>> &m_correspondences;
 
                 const double computeMeanEucledianDistance();
+
                 const double computeMeanDescriptorDistance();
+                
                 const Eigen::MatrixXd computeMetricDistance(const std::vector<adi::Point> &source_point_cloud, const std::vector<adi::Point> &target_point_cloud);
         };
     }
