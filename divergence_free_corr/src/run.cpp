@@ -47,15 +47,10 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
 
     while(iter < MAX_NUMBER_OF_ITERS)
     {
-        std::cout << "Starting RK2 integration" << std::endl;
-        auto start = std::chrono::high_resolution_clock::now();
-
         // RK2 integration
         updated_pts = adi::numerics::RungeKutta2Integration(base_indices, utilities::toEigenMatrix(source_downsampled_cloud), coeffs_ak, vel_basis_functions, NUMBER_OF_TIME_STEPS);
 
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
-        std::cout << "Time taken for RK integration(in milliseconds) : " << duration.count() << std::endl;
-        std::cout << "Completed RK integration" << std::endl;
+        std::cout << "Completed RK integration for iteration: " << iter << std::endl;
 
         // E-step : Compute soft correspondences
     //     auto matches = adi::matching::Matching(*initial_correspondences);
