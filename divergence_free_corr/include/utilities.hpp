@@ -2,6 +2,7 @@
 #define UTILTIES_HPP
 
 #include "io.hpp"
+#include "deformation_field.hpp"
 
 namespace utilities{
     /**
@@ -51,6 +52,16 @@ namespace utilities{
      * @return Point cloud wherein each column represents values in each dimension
      */
     Eigen::MatrixXd toEigenMatrix(const std::vector<adi::Point> &cloud);
+
+    /**
+     * @brief Convert to vector of eigen 3D vectors
+     * 
+     * @param cloud
+     * @param point_cloud
+     */
+    void toPointCloud(const Eigen::MatrixXd &cloud, std::vector<adi::Point> *point_cloud);
+
+    const Eigen::MatrixXd computeLInv(const std::vector<adi::deformation_field::BasisIndices> &basis_indices);
     
 }
 #endif //UTILITIES_HPP

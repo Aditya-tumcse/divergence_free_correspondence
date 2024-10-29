@@ -11,6 +11,10 @@ include_directories(/opt/Fastor)
 
 # Find PCL package
 find_package(PCL REQUIRED)
+find_package(Ceres REQUIRED)
+
+# Include directories for Ceres
+include_directories(${Ceres_INCLUDE_DIRS})
 
 # Add the src directory
 add_subdirectory(src)

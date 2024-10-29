@@ -100,4 +100,29 @@ namespace utilities{
         return matrix; 
     }
 
+    void toPointCloud(const Eigen::MatrixXd &cloud, std::vector<adi::Point> *point_cloud)
+    {
+        for(size_t i = 0;i < cloud.rows();++i)
+        {
+            adi::Point pt;
+            pt.s_point.x() = cloud(i,0);
+            pt.s_point.y() = cloud(i,1);
+            pt.s_point.z() = cloud(i,2);
+            point_cloud->push_back(pt);
+        }
+        return;
+    }
+
+    const Eigen::MatrixXd computeLInv(const std::vector<adi::deformation_field::BasisIndices> &basis_indices)
+    {
+        Eigen::MatrixXd L_inv = Eigen::MatrixXd::Zero(MAX_NUMBER_OF_VELOCITY_BASIS, MAX_NUMBER_OF_VELOCITY_BASIS);
+                
+        for(uint32_t i = 0;i < MAX_NUMBER_OF_VELOCITY_BASIS;++i)
+        {
+            L_inv(i,i) = basis_indices.at(i).eigen_value;
+        }
+        
+        return L_inv;
+    }
+
 }

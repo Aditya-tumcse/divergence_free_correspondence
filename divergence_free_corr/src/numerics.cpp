@@ -30,54 +30,6 @@ namespace adi{
             return basis_indices;
         }
 
-        const double ObtainCoefficientOfVelocityField(const double eigen_value)
-        {
-            const double mean = 0.0;
-            const double stddev = eigen_value;
-
-            // Create a random number generator and a normal distribution object
-            std::random_device rd;  // Random device for seeding
-            std::mt19937 gen(rd()); // Mersenne Twister generator seeded with rd()
-            std::normal_distribution<> d(mean, stddev);
-
-            // Generate a sample from the normal distribution
-            double sample = d(gen);
-
-            return sample;
-        }
-
-        // Eigen::Vector3d RungeKutaIntegration(const Eigen::Vector3d &src_pt, const std::vector<adi::deformation_field::BasisIndices> &basis_indices, const Eigen::VectorXd &coeffs_ak, const uint32_t num_time_steps)
-        // {
-        //     Eigen::Vector3d current_pt = src_pt;
-        //     const double dt = 1.0 / num_time_steps;
-
-        //     std::cout << "Size of each time step: " << dt << std::endl;
-
-            
-        //         Eigen::Vector3d local_current_pt = current_pt;
-        //         for (uint32_t i = 0; i < num_time_steps; ++i)
-        //         {
-        //             adi::deformation_field::DeformationField df;
-
-        //             Eigen::Vector3d k1 = df.computeVelocityField(local_current_pt, basis_indices, coeffs_ak);
-
-        //             Eigen::Vector3d midpoint;
-        //             midpoint.setZero();
-        //             midpoint.x() = local_current_pt.x() + 0.5 * dt * k1.x();
-        //             midpoint.y() = local_current_pt.y() + 0.5 * dt * k1.y();
-        //             midpoint.z() = local_current_pt.z() + 0.5 * dt * k1.z();
-
-        //             Eigen::Vector3d k2 = df.computeVelocityField(midpoint, basis_indices, coeffs_ak);
-
-        //             current_pt.x() += dt * k2.x();
-        //             current_pt.y() += dt * k2.y();
-        //             current_pt.z() += dt * k2.z();
-                    
-        //         }
-
-        //     return current_pt;
-        // }
-
         Eigen::MatrixXd RungeKutta2Integration(const std::vector<adi::deformation_field::BasisIndices> &basis_indices, Eigen::MatrixXd src_point_cloud,
             const Eigen::VectorXd &coeffs_ak,
             const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions,
@@ -111,68 +63,66 @@ namespace adi{
             return updated_pts; 
         }
 
-
-
-        // Eigen::MatrixXd ComputeJacobian(const std::vector<adi::deformation_field::BasisIndices> &base_indices, const adi::Point &point)
-        // {
-        //     Eigen::MatrixXd jacobian(3,base_indices.size());
-        //     adi::deformation_field::DeformationField df;
-
-        //     for(uint32_t i = 0;i < base_indices.size();++i)
-        //     {
-        //         Eigen::Vector3d vel_basis_functions = df.computeVelocityBasisFunctions(base_indices[i].eigen_value, base_indices[i], point.s_point);
-        //         jacobian(0, i) = vel_basis_functions.x();
-        //         jacobian(1, i) = vel_basis_functions.y();
-        //         jacobian(2, i) = vel_basis_functions.z();
-        //     }
-
-        //     return jacobian;
-        // }
-
         const double EucledianDistance(const Eigen::Vector3d &point_1, const Eigen::Vector3d &point_2)
         {
             return (point_1 - point_2).norm();
         }
 
-        // Eigen::MatrixXd ComputeHessian(const std::vector<adi::deformation_field::BasisIndices> &base_indices, std::vector<adi::Point> cloud_src,std::vector<adi::Point> cloud_target, const Eigen::MatrixXd &soft_corr_matrix, const double r0)
-        // {
-        //     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(base_indices.size(), base_indices.size());
+        struct GaussianPriorCostFunctor {
+            GaussianPriorCostFunctor(const Eigen::MatrixXd &L_inv)
+                :  s_L_inv(L_inv) {}
 
-        //     for(uint32_t i = 0;i < cloud_src.size();++i)
-        //     {
-        //         Eigen::MatrixXd jacobian = ComputeJacobian(base_indices, cloud_src[i]);
+            template <typename T>
+            bool operator()(const T* coeffs_ak, T* residual) const {
+                // Compute the Gaussian prior residual term with (1/2) * (a^T * L_inv * a)
+                Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> coeffs(coeffs_ak, s_L_inv.rows());
+                Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> s_L_inv_T = s_L_inv.template cast<T>();
 
-        //         for(uint32_t j = 0;j < cloud_target.size();++j)
-        //         {
-        //             double eucledian_dist = EucledianDistance(cloud_src[i].s_point, cloud_target[j].s_point);
-        //             double rho = (eucledian_dist <= r0) ? 0.5 * eucledian_dist * eucledian_dist : r0 * std::abs(eucledian_dist) - 0.5 * r0 * r0;
+                T quadratic_term = coeffs.transpose() * s_L_inv_T * coeffs; // Ensure L_inv is cast to type T
+                residual[0] = T(0.5) * quadratic_term; 
 
-        //             H += soft_corr_matrix(i,j) * rho * (jacobian.transpose() * jacobian); 
-        //         }
-        //     }
+                return true;
+            }
 
-        //     return H;
-        // }
+            const Eigen::MatrixXd &s_L_inv; // Reference to the L_inv matrix
+        };
 
-        // Eigen::VectorXd ComputeGradient(const std::vector<adi::deformation_field::BasisIndices> &base_indices, std::vector<adi::Point> cloud_src,std::vector<adi::Point> cloud_target, const Eigen::MatrixXd &soft_corr_matrix, const double r0)
-        // {
-        //     Eigen::VectorXd gradient = Eigen::VectorXd::Zero(base_indices.size());
-        //     for(uint32_t i = 0;i < cloud_src.size();++i)
-        //     {
-        //         Eigen::MatrixXd jacobian = ComputeJacobian(base_indices, cloud_src[i]);
+        void Optimize(const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions, Eigen::VectorXd *coeffs_ak, const std::vector<adi::Point> &target_cloud, const Eigen::MatrixXd &soft_corr_matrix,const Eigen::MatrixXd& L_inv)
+        {
+            // Prepare the ceres problem
+            ceres::Problem problem;
 
-        //         for(uint32_t j = 0;j < cloud_target.size();++j)
-        //         {
-        //             double eucledian_dist = EucledianDistance(cloud_src[i].s_point, cloud_target[j].s_point);
-        //             double rho = (eucledian_dist <= r0) ? 0.5 * eucledian_dist * eucledian_dist : r0 * std::abs(eucledian_dist) - 0.5 * r0 * r0;
+            // for(size_t i = 0;i < target_cloud.size();++i)
+            // {
+            //     auto weight = soft_corr_matrix.col(i);
 
-        //             gradient += soft_corr_matrix(i,j) * rho * jacobian.transpose() * (cloud_src[i].s_point - cloud_target[j].s_point); 
-        //         }
-        //     }
+            //     // Create a residual block for this target point
+            //     problem.AddResidualBlock(
+            //         new ceres::AutoDiffCostFunction<MatchingCostFunctor, 3, Eigen::Dynamic>(new MatchingCostFunctor(target_cloud[i], vel_basis_functions, coeffs_ak, weight)),
+            //         nullptr,
+            //         coeffs_ak->data() 
+            //     );
+            // }
 
-        //     return gradient;
-        // }
+            // Add Gaussian prior residual block
+            problem.AddResidualBlock(
+                new ceres::AutoDiffCostFunction<GaussianPriorCostFunctor, 1, MAX_NUMBER_OF_VELOCITY_BASIS>(new GaussianPriorCostFunctor(L_inv)),
+                nullptr, 
+                coeffs_ak->data() // Optimizing coeffs_ak
+            );
 
+            // Set solver options
+            ceres::Solver::Options options;
+            options.max_num_iterations = 10;
+            options.linear_solver_type = ceres::DENSE_QR;
+
+            // Solve the problem
+            ceres::Solver::Summary summary;
+            ceres::Solve(options, &problem, &summary);
+            
+            // Print solver summary
+            std::cout << summary.FullReport() << std::endl;
+        }
 
     }
 }

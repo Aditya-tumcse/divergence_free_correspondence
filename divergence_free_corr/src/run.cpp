@@ -43,18 +43,24 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     // Update point cloud Y with the current deformation field
     std::vector<adi::Point> updated_cloud;
     updated_cloud.reserve(source_downsampled_cloud.size());
-    Eigen::MatrixXd updated_pts = Eigen::MatrixXd::Zero(NUMBER_OF_SAMPLE_POINTS, 3);
 
     while(iter < MAX_NUMBER_OF_ITERS)
     {
         // RK2 integration
-        updated_pts = adi::numerics::RungeKutta2Integration(base_indices, utilities::toEigenMatrix(source_downsampled_cloud), coeffs_ak, vel_basis_functions, NUMBER_OF_TIME_STEPS);
+        Eigen::MatrixXd updated_pts = adi::numerics::RungeKutta2Integration(base_indices, utilities::toEigenMatrix(source_downsampled_cloud), coeffs_ak, vel_basis_functions, NUMBER_OF_TIME_STEPS);
+        utilities::toPointCloud(updated_pts, &updated_cloud);
 
+        std::cout << "Size of updated cloud: " << updated_cloud.size() << std::endl;
         std::cout << "Completed RK integration for iteration: " << iter << std::endl;
 
         // E-step : Compute soft correspondences
-    //     auto matches = adi::matching::Matching(*initial_correspondences);
-    //     auto soft_corr_matrix = matches.computeSoftCorrespondences(updated_cloud, target_downsampled_cloud);
+        auto matches = adi::matching::Matching(*initial_correspondences);
+        auto soft_corr_matrix = matches.computeSoftCorrespondences(updated_cloud, target_downsampled_cloud);
+
+        // Compute updated velocity basis functions of the updated cloud
+        auto vel_basis_functions_updated = df.computeVelocityBasisFunctions(base_indices, updated_pts);
+
+        // M-step : handled by ceres
 
     //     // M-step : Gauss Newton optimization
     //     Eigen::MatrixXd hessian_matrix = adi::numerics::ComputeHessian(base_indices, updated_cloud, target_downsampled_cloud, soft_corr_matrix, r0);
@@ -72,7 +78,7 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     //         break;
     //     }
         iter = iter + 1;
-
+        updated_cloud.clear();
     }
 
     // for(size_t a_k_i = 0;a_k_i < coeffs_ak.size();++a_k_i)
