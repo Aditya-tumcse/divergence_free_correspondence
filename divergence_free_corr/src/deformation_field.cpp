@@ -74,7 +74,9 @@ namespace adi{
         Eigen::MatrixXd DeformationField::computeVelocityField(const Eigen::VectorXd &coeffs_ak,
             const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions)
         {
+            std::cout << "here" << std::endl;
             Eigen::MatrixXd velocity_field_all_pts = Eigen::MatrixXd::Zero(NUMBER_OF_SAMPLE_POINTS,3);
+            std::cout << "here 1" << std::endl;
 
             // Create a Fastor tensor from the Eigen vector of the coefficients of velocity basis functions
             Fastor::Tensor<double, MAX_NUMBER_OF_VELOCITY_BASIS> coeffs_ak_tensor(coeffs_ak.data());
@@ -109,6 +111,45 @@ namespace adi{
             
             return velocity_field_all_pts;
         }
+
+        // template <typename T>
+        // Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> DeformationField::computeVelocityFieldTemplated(
+        //     const Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 1> &coeffs_ak,
+        //     const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions)
+        // {
+        //     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> velocity_field_all_pts = Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3>::Zero();
+
+        //     // Convert coeffs_ak to Fastor tensor compatible with T.
+        //     Fastor::Tensor<T, MAX_NUMBER_OF_VELOCITY_BASIS> coeffs_ak_tensor(coeffs_ak.data());
+
+        //     for (uint32_t i = 0; i < TENSOR_DEPTH; i += 3) {
+        //         auto vel_basis_x_component = vel_basis_functions(Fastor::all, Fastor::all, i);
+        //         auto intermediate_vel_field_x = Fastor::matmul(vel_basis_x_component, coeffs_ak_tensor);
+
+        //         auto vel_basis_y_component = vel_basis_functions(Fastor::all, Fastor::all, i + 1);
+        //         auto intermediate_vel_field_y = Fastor::matmul(vel_basis_y_component, coeffs_ak_tensor);
+
+        //         auto vel_basis_z_component = vel_basis_functions(Fastor::all, Fastor::all, i + 2);
+        //         auto intermediate_vel_field_z = Fastor::matmul(vel_basis_z_component, coeffs_ak_tensor);
+
+        //         // Map Fastor tensor to Eigen, allowing autodiff types
+        //         Eigen::TensorMap<Eigen::Tensor<T, 2>> x_component(intermediate_vel_field_x.data(), NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS);
+        //         Eigen::TensorMap<Eigen::Tensor<T, 2>> y_component(intermediate_vel_field_y.data(), NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS);
+        //         Eigen::TensorMap<Eigen::Tensor<T, 2>> z_component(intermediate_vel_field_z.data(), NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS);
+
+        //         // Sum columns to produce velocity vector components for each point
+        //         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> vector_column_sums_x = x_component.sum(Eigen::array<Eigen::Index, 1>({0}));
+        //         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> vector_column_sums_y = y_component.sum(Eigen::array<Eigen::Index, 1>({0}));
+        //         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> vector_column_sums_z = z_component.sum(Eigen::array<Eigen::Index, 1>({0}));
+
+        //         velocity_field_all_pts.col(0) += vector_column_sums_x;
+        //         velocity_field_all_pts.col(1) += vector_column_sums_y;
+        //         velocity_field_all_pts.col(2) += vector_column_sums_z;
+        //     }
+
+        //     return velocity_field_all_pts;
+        // }
+
 
     }
 }

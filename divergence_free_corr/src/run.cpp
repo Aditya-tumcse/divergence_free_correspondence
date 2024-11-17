@@ -22,6 +22,10 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     std::cout << "Size of source cloud for processing: " << source_downsampled_cloud.size() << std::endl;
     std::cout << "Size of target cloud for processing: " << target_downsampled_cloud.size() << std::endl;
 
+    // Serialize downsampled source cloud
+    // adi::pointCloud::serializeCloud(source_downsampled_cloud, "/workspaces/divergence_free_correspondence/data/source_downsampled_cloud.ply");
+    // std::cout << "Completed writing source downsampled cloud" << std::endl;
+
     // Compute initial correspondence based on SHOT features
     std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> initial_correspondences = utilities::computeCorrespondences(source_downsampled_cloud, target_downsampled_cloud);
     std::cout << "Initial correspondences computed " << std::endl;
@@ -36,29 +40,33 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud)
     auto vel_basis_functions = df.computeVelocityBasisFunctions(base_indices, utilities::toEigenMatrix(source_downsampled_cloud));
     
     std::cout << "Completed computing velocity basis functions " << std::endl;
-    Eigen::VectorXd coeffs_ak;
-    coeffs_ak.resize(base_indices.size());
-    coeffs_ak.setZero();
+    Eigen::VectorXd coeffs_ak = Eigen::VectorXd::Zero(MAX_NUMBER_OF_VELOCITY_BASIS);
 
     // Update point cloud Y with the current deformation field
-    std::vector<adi::Point> updated_cloud;
-    updated_cloud.reserve(source_downsampled_cloud.size());
-
     while(iter < MAX_NUMBER_OF_ITERS)
     {
         // RK2 integration
+        auto start = std::chrono::high_resolution_clock::now();
         Eigen::MatrixXd updated_pts = adi::numerics::RungeKutta2Integration(base_indices, utilities::toEigenMatrix(source_downsampled_cloud), coeffs_ak, vel_basis_functions, NUMBER_OF_TIME_STEPS);
-        utilities::toPointCloud(updated_pts, &updated_cloud);
+        auto end = std::chrono::high_resolution_clock::now();
 
+        std::vector<adi::Point> updated_cloud = utilities::toPointCloud(updated_pts);
+
+        std::chrono::duration<double, std::milli> duration = end - start;
+        std::cout << "Time taken (in milliseconds) for " << NUMBER_OF_TIME_STEPS << " time steps of RK2 integration: " << duration.count() << std::endl;
         std::cout << "Size of updated cloud: " << updated_cloud.size() << std::endl;
         std::cout << "Completed RK integration for iteration: " << iter << std::endl;
 
+        // Serialize downsampled source cloud
+        // adi::pointCloud::serializeCloud(updated_cloud, "/workspaces/divergence_free_correspondence/data/source_cloud_updated.ply");
+        // std::cout << "Completed writing updated source cloud" << std::endl;
+
         // E-step : Compute soft correspondences
-        auto matches = adi::matching::Matching(*initial_correspondences);
-        auto soft_corr_matrix = matches.computeSoftCorrespondences(updated_cloud, target_downsampled_cloud);
+        // auto matches = adi::matching::Matching(*initial_correspondences);
+        // auto soft_corr_matrix = matches.computeSoftCorrespondences(updated_cloud, target_downsampled_cloud);
 
         // Compute updated velocity basis functions of the updated cloud
-        auto vel_basis_functions_updated = df.computeVelocityBasisFunctions(base_indices, updated_pts);
+        //auto vel_basis_functions_updated = df.computeVelocityBasisFunctions(base_indices, updated_pts);
 
         // M-step : handled by ceres
 

@@ -6,6 +6,7 @@
 #include<ceres/ceres.h>
 
 #include "deformation_field.hpp"
+#include "utilities.hpp"
 #include "constants.hpp"
 
 namespace adi{
@@ -32,9 +33,17 @@ namespace adi{
          */
         Eigen::MatrixXd RungeKutta2Integration(const std::vector<adi::deformation_field::BasisIndices> &basis_indices, Eigen::MatrixXd src_point_cloud, const Eigen::VectorXd &coeffs_ak, const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions, const uint32_t num_time_steps);
 
+        // template <typename T>
+        // Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> RungeKutta2Integration(
+        //     const std::vector<adi::deformation_field::BasisIndices>& basis_indices,
+        //     const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3>& src_point_cloud,
+        //     const Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 1>& coeffs_ak,
+        //     const Fastor::Tensor<T, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>& vel_basis_functions,
+        //     const uint32_t num_time_steps);   
+
         const double EucledianDistance(const Eigen::Vector3d &point_1, const Eigen::Vector3d &point_2);
 
-        void Optimize(const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions, Eigen::VectorXd *coeffs_ak, const std::vector<adi::Point> &target_cloud, const Eigen::MatrixXd &soft_corr_matrix, const Eigen::MatrixXd &L_inv);
+        void Optimize(const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions, Eigen::VectorXd *coeffs_ak, const std::vector<adi::Point> &target_cloud, const std::vector<adi::Point> &src_cloud, const Eigen::MatrixXd &soft_corr_matrix, const Eigen::MatrixXd &L_inv, const std::vector<adi::deformation_field::BasisIndices> &base_indices);
     }
 }
 #endif

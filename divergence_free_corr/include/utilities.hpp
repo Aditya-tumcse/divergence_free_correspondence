@@ -59,9 +59,12 @@ namespace utilities{
      * @param cloud
      * @param point_cloud
      */
-    void toPointCloud(const Eigen::MatrixXd &cloud, std::vector<adi::Point> *point_cloud);
+    std::vector<adi::Point> toPointCloud(const Eigen::MatrixXd &cloud);
 
     const Eigen::MatrixXd computeLInv(const std::vector<adi::deformation_field::BasisIndices> &basis_indices);
+
+    template <typename T>
+    Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> L2Norm(const Eigen::Matrix<T, Eigen::Dynamic, 3>& A, const Eigen::Matrix<T, Eigen::Dynamic, 3>& B);
     
 }
 #endif //UTILITIES_HPP

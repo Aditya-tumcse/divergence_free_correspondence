@@ -90,6 +90,8 @@ namespace adi{
            */
           const uint32_t getSize() const {return m_point_cloud.size();}
 
+          static void serializeCloud(const std::vector<adi::Point> &cloud, const std::string &file_path);
+
           ~pointCloud() = default;
 
       private:
@@ -101,6 +103,8 @@ namespace adi{
            * @return Returns pointer to the PCL format pointcloud
            */
           pcl::PointCloud<pcl::PointXYZ>::Ptr toPclCloud();
+
+          static pcl::PointCloud<pcl::PointXYZ>::Ptr toPclCloud(const std::vector<adi::Point> &cloud);
           
           /**
            * @brief Loads the pointcloud from PCL format to the format of the class

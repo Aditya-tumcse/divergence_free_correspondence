@@ -35,6 +35,11 @@ namespace adi{
                  */
                 Eigen::MatrixXd computeVelocityField(const Eigen::VectorXd &coeffs_ak, const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions);  
 
+                // template <typename T>
+                // static Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> computeVelocityFieldTemplated(
+                //     const Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 1> &coeffs_ak,
+                //     const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions);
+
                 /**
                  * @brief Computes velocity basis functions for the pointcloud
                  * 

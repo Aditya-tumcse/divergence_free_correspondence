@@ -1,5 +1,7 @@
 #include "utilities.hpp"
 
+#include <cmath>
+
 namespace utilities{
     double eucledianDistance(const Eigen::Vector3d &point_1, const Eigen::Vector3d &point_2)
     {
@@ -100,17 +102,21 @@ namespace utilities{
         return matrix; 
     }
 
-    void toPointCloud(const Eigen::MatrixXd &cloud, std::vector<adi::Point> *point_cloud)
+    std::vector<adi::Point> toPointCloud(const Eigen::MatrixXd &cloud)
     {
+        std::vector<adi::Point> point_cloud;
+        
         for(size_t i = 0;i < cloud.rows();++i)
         {
             adi::Point pt;
-            pt.s_point.x() = cloud(i,0);
-            pt.s_point.y() = cloud(i,1);
-            pt.s_point.z() = cloud(i,2);
-            point_cloud->push_back(pt);
+            if(std::isnan(cloud(i,0)) || std::isnan(cloud(i,1)) || std::isnan(cloud(i,2)) || std::isinf(cloud(i,0)) || std::isinf(cloud(i,1)) || std::isinf(cloud(i,2))){
+                continue;
+            }
+            pt.s_point = Eigen::Vector3d(cloud(i,0), cloud(i,1), cloud(i,2));
+            point_cloud.push_back(pt);
         }
-        return;
+        std::cout << "Size of cloud after filtering: " << point_cloud.size() << std::endl;
+        return point_cloud;
     }
 
     const Eigen::MatrixXd computeLInv(const std::vector<adi::deformation_field::BasisIndices> &basis_indices)
@@ -124,5 +130,18 @@ namespace utilities{
         
         return L_inv;
     }
+
+    template <typename T>
+    Eigen::Matrix<T,NUMBER_OF_SAMPLE_POINTS,1>  L2Norm(const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3>& A, const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3>& B) {
+        // Compute the squared differences
+        Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> diff = A - B; // Element-wise difference
+        Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> squared_diff = diff.array().square(); // Square of differences
+
+        Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> sum_squared_diff = squared_diff.rowwise().sum();
+
+        // Take the square root to get the L2 norm
+        return std::sqrt(sum_squared_diff);
+    }
+
 
 }

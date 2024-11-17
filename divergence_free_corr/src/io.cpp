@@ -2,6 +2,7 @@
 #include "features.hpp"
 
 #include<cassert>
+#include<cmath>
 #include<pcl/features/normal_3d_omp.h>
 
 namespace adi{
@@ -123,6 +124,31 @@ namespace adi{
         }
 
         return cloud;
+    }
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud::toPclCloud(const std::vector<adi::Point> &cloud)
+    {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        int count = 0;
+        std::cout << cloud.size() << std::endl;
+        for(size_t i = 0;i < cloud.size();++i)
+        {
+            pcl::PointXYZ pcl_pt;
+            if(static_cast<double>(std::isinf(cloud.at(i).s_point.x())) || static_cast<double>(std::isnan(cloud.at(i).s_point.x())) || static_cast<double>(std::isnan(cloud.at(i).s_point.y())) || static_cast<double>(std::isinf(cloud.at(i).s_point.y())) || static_cast<double>(std::isnan(cloud.at(i).s_point.z())) || static_cast<double>(std::isinf(cloud.at(i).s_point.z())))
+            {
+                count++;
+                continue;
+            }
+               
+            pcl_pt.x = cloud.at(i).s_point.x();
+            pcl_pt.y = cloud.at(i).s_point.y();
+            pcl_pt.z = cloud.at(i).s_point.z();
+
+            pcl_cloud->push_back(pcl_pt);
+        }
+
+        std::cout << "Number of invalid points: " << count << std::endl;
+        return pcl_cloud;
     }
     
     void pointCloud::loadPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &point_cloud)
@@ -246,5 +272,12 @@ namespace adi{
             this->setPointCloud(std::move(subsampled_point_cloud));
             return;
         }
+    }
+
+    void pointCloud::serializeCloud(const std::vector<adi::Point> &cloud, const std::string &file_path){
+        pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud = toPclCloud(cloud);
+
+        pcl::io::savePLYFile(file_path, *pcl_cloud);
+
     }
 }
