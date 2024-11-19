@@ -3,7 +3,7 @@
 
 #include "io.hpp"
 #include "constants.hpp"
-#include "Fastor/Fastor.h"
+#include <Fastor/Fastor.h>
 
 #include <eigen3/Eigen/Dense>
 #include <cassert>

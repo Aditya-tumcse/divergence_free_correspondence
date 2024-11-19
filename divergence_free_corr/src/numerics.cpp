@@ -1,5 +1,5 @@
 #include "numerics.hpp"
-#include "Fastor/Fastor.h"
+#include <Fastor/Fastor.h>
 
 #include <random>
 #include <eigen3/unsupported/Eigen/CXX11/Tensor>
