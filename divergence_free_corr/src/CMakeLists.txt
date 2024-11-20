@@ -1,10 +1,13 @@
 # Collect all source files for the library
 set(SRC_FILES
+    io.cpp
+    features.cpp
     matching.cpp
     deformation_field.cpp
     utilities.cpp
     numerics.cpp
     run.cpp
+    main.cpp
 )
 
 # Define a static library for the core functionality

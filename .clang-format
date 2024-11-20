@@ -1,4 +1,2 @@
-{
-    BasedOnStyle: LLVM
-    ColumnLimit: 110
-}
+BasedOnStyle: LLVM
+ColumnLimit: 100

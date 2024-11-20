@@ -1,14 +1,15 @@
 #include "run.hpp"
 
-int main()
-{
-    const std::string source_input_cloud_path = "/workspaces/divergence_free_correspondence/data/source_cloud.ply";
-    const std::string target_input_cloud_path = "/workspaces/divergence_free_correspondence/data/target_cloud.ply";
-    
-    adi::pointCloud source_cloud(source_input_cloud_path);
-    adi::pointCloud target_cloud(target_input_cloud_path);
+int main() {
+  const std::string source_input_cloud_path =
+      "/workspaces/divergence_free_correspondence/data/source_cloud.ply";
+  const std::string target_input_cloud_path =
+      "/workspaces/divergence_free_correspondence/data/target_cloud.ply";
 
-    run(&source_cloud, &target_cloud);
+  adi::pointCloud source_cloud(source_input_cloud_path);
+  adi::pointCloud target_cloud(target_input_cloud_path);
 
-    return EXIT_SUCCESS;
+  // run(&source_cloud, &target_cloud);
+
+  return EXIT_SUCCESS;
 }

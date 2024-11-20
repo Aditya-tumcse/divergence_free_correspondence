@@ -40,18 +40,14 @@ RUN wget -q https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
     make install && \
     cd ../../ && rm -rf eigen-3.4.0.tar.gz eigen-3.4.0
 
-# Clone the PCL repository
-RUN git clone --depth 1 https://github.com/PointCloudLibrary/pcl.git /pcl
-
-# Create a build directory for PCL
-WORKDIR /pcl/build
-
-# Build PCL using CMake
-RUN cmake .. && \
-    make -j$(nproc) && \
-    make install && \
+# Clone and build PCL
+RUN git clone --depth 1 https://github.com/PointCloudLibrary/pcl.git /pcl && \
+    cd /pcl && mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 && \
+    make -j$(nproc) && make install && \
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && \
     ldconfig && \
-    cd ../.. && rm -rf /pcl
+    cd ../../ && rm -rf /pcl
 
 # Install Ceres Solver
 RUN wget https://github.com/ceres-solver/ceres-solver/archive/refs/tags/2.2.0.tar.gz && \
@@ -61,9 +57,9 @@ RUN wget https://github.com/ceres-solver/ceres-solver/archive/refs/tags/2.2.0.ta
     make -j  && make install && \
     cd ../.. && rm -rf ceres-solver-2.2.0
 
-# Install Fastor
-RUN git clone --depth 1 https://github.com/romeric/Fastor.git /opt/Fastor
+# # Install Fastor
+# RUN git clone --depth 1 https://github.com/romeric/Fastor.git /opt/Fastor
 
-# Copy the repo (adjust path as necessary)
-WORKDIR /opt
-COPY ../divergence_free_corr /opt/divergence_free_correspondence
+# # Copy the repo (adjust path as necessary)
+# WORKDIR /opt
+# COPY ../divergence_free_corr /opt/divergence_free_correspondence

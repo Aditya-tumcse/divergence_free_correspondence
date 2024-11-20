@@ -18,13 +18,7 @@ add_subdirectory(src)
 # Create the main executable
 add_executable(main_executable src/main.cpp)
 
-# Link the static library to the executable
+# Link PCL and other dependencies to the main executable
+target_include_directories(main_executable PRIVATE ${PCL_INCLUDE_DIRS} ${Ceres_INCLUDE_DIRS})
 target_link_libraries(main_executable PRIVATE divergence_free_corr ${PCL_LIBRARIES} ${Ceres_LIBRARIES})
 
-# Include directories for the executable
-target_include_directories(main_executable PRIVATE 
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/external/include
-    ${PCL_INCLUDE_DIRS}
-    ${Ceres_INCLUDE_DIRS}
-)
