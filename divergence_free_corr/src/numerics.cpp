@@ -1,4 +1,5 @@
 #include "numerics.hpp"
+#include "../external/include/clue.hpp"
 #include <Fastor/Fastor.h>
 
 #include <eigen3/unsupported/Eigen/CXX11/Tensor>
@@ -50,9 +51,7 @@ Eigen::MatrixXd RungeKutta2Integration(
 
   const double dt = 1.0 / num_time_steps;
 
-  std::cout << "Size of each time step: " << dt << std::endl;
   for (uint32_t t = 0; t < num_time_steps; ++t) {
-    std::cout << t << std::endl;
     adi::deformation_field::DeformationField df;
     Eigen::MatrixXd intermediate_vel_field =
         df.computeVelocityField(coeffs_ak, vel_basis_functions);
@@ -67,7 +66,6 @@ Eigen::MatrixXd RungeKutta2Integration(
     midpoint.col(2) =
         updated_pts.col(2) + 0.5 * dt * intermediate_vel_field.col(2);
 
-    std::cout << "Midpoint updation completed " << std::endl;
     auto updated_vel_basis_functions =
         df.computeVelocityBasisFunctions(basis_indices, midpoint);
 
@@ -192,77 +190,79 @@ const double EucledianDistance(const Eigen::Vector3d &point_1,
 //     std::vector<adi::deformation_field::BasisIndices> &s_base_indices;
 // };
 
-// struct GaussianPriorCostFunctor {
-//     GaussianPriorCostFunctor(const Eigen::MatrixXd &L_inv)
-//         :  s_L_inv(L_inv) {}
+struct GaussianPriorCostFunctor {
+  GaussianPriorCostFunctor(const Eigen::MatrixXd &L_inv) : s_L_inv(L_inv) {}
 
-//     template <typename T>
-//     bool operator()(const T* coeffs_ak, T* residual) const {
-//         // Compute the Gaussian prior residual term with (1/2) * (a^T * L_inv
-//         * a) Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>>
-//         coeffs(coeffs_ak, s_L_inv.rows()); Eigen::Matrix<T, Eigen::Dynamic,
-//         Eigen::Dynamic> s_L_inv_T = s_L_inv.template cast<T>();
+  template <typename T> bool operator()(const T *coeffs_ak, T *residual) const {
+    // Compute the Gaussian prior residual term with (1/2) * (a^T * L_inv
+    //* a)
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> coeffs(
+        coeffs_ak, s_L_inv.rows());
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> s_L_inv_T =
+        s_L_inv.template cast<T>();
 
-//         T quadratic_term = coeffs.transpose() * s_L_inv_T * coeffs;
-//         residual[0] = T(0.5) * quadratic_term;
+    T quadratic_term = coeffs.transpose() * s_L_inv_T * coeffs;
+    residual[0] = T(0.5) * quadratic_term;
 
-//         return true;
-//     }
+    return true;
+  }
 
-//     const Eigen::MatrixXd &s_L_inv; // Reference to the L_inv matrix
-// };
+  const Eigen::MatrixXd &s_L_inv; // Reference to the L_inv matrix
+};
 
-// void Optimize(const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
-// MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> &vel_basis_functions,
-// Eigen::VectorXd *coeffs_ak, const std::vector<adi::Point> &target_cloud,
-// const std::vector<adi::Point> &src_cloud, const Eigen::MatrixXd
-// &soft_corr_matrix,const Eigen::MatrixXd& L_inv, const
-// std::vector<adi::deformation_field::BasisIndices> &base_indices)
-// {
-//     // Prepare the ceres problem
-//     ceres::Problem problem;
+void Optimize(
+    const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                         MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
+        &vel_basis_functions,
+    Eigen::VectorXd *coeffs_ak, const std::vector<adi::Point> &target_cloud,
+    const std::vector<adi::Point> &src_cloud,
+    const Eigen::MatrixXd &soft_corr_matrix, const Eigen::MatrixXd &L_inv,
+    const std::vector<adi::deformation_field::BasisIndices> &base_indices) {
+  // Prepare the ceres problem
+  ceres::Problem problem;
 
-//     for(size_t i = 0;i < target_cloud.size();++i)
-//     {
-//         // boradcast the target cloud
-//         Eigen::MatrixXd broadcasted_target_point =
-//         Eigen::MatrixXd::Ones(NUMBER_OF_SAMPLE_POINTS, 3);
-//         broadcasted_target_point.col(0).setConstant(target_cloud.at(i).s_point.x());
-//         broadcasted_target_point.col(1).setConstant(target_cloud.at(i).s_point.y());
-//         broadcasted_target_point.col(2).setConstant(target_cloud.at(i).s_point.z());
+  // for (size_t i = 0; i < target_cloud.size(); ++i) {
+  //   // boradcast the target cloud
+  //   Eigen::MatrixXd broadcasted_target_point =
+  //       Eigen::MatrixXd::Ones(NUMBER_OF_SAMPLE_POINTS, 3);
+  //   broadcasted_target_point.col(0).setConstant(target_cloud.at(i).s_point.x());
+  //   broadcasted_target_point.col(1).setConstant(target_cloud.at(i).s_point.y());
+  //   broadcasted_target_point.col(2).setConstant(target_cloud.at(i).s_point.z());
 
-//         auto weight = soft_corr_matrix.col(i);
+  //   auto weight = soft_corr_matrix.col(i);
 
-//         // Create a residual block for this target point
-//         problem.AddResidualBlock(
-//             new ceres::AutoDiffCostFunction<MatchingCostFunctor, 1,
-//             MAX_NUMBER_OF_VELOCITY_BASIS>(new
-//             MatchingCostFunctor(broadcasted_target_point,
-//             utilities::toEigenMatrix(src_cloud),vel_basis_functions, weight,
-//             base_indices)), nullptr, coeffs_ak->data()
-//         );
-//     }
+  //   // Create a residual block for this target point
+  //   problem.AddResidualBlock(
+  //       new ceres::AutoDiffCostFunction<MatchingCostFunctor, 1,
+  //                                       MAX_NUMBER_OF_VELOCITY_BASIS>(
+  //           new MatchingCostFunctor(broadcasted_target_point,
+  //                                   utilities::toEigenMatrix(src_cloud),
+  //                                   vel_basis_functions, weight,
+  //                                   base_indices)),
+  //       nullptr, coeffs_ak->data());
+  // }
 
-//     // Add Gaussian prior residual block
-//     problem.AddResidualBlock(
-//         new ceres::AutoDiffCostFunction<GaussianPriorCostFunctor, 1,
-//         MAX_NUMBER_OF_VELOCITY_BASIS>(new GaussianPriorCostFunctor(L_inv)),
-//         nullptr,
-//         coeffs_ak->data() // Optimizing coeffs_ak
-//     );
+  // Add Gaussian prior residual block
+  problem.AddResidualBlock(
+      new ceres::AutoDiffCostFunction<GaussianPriorCostFunctor, 1,
+                                      MAX_NUMBER_OF_VELOCITY_BASIS>(
+          new GaussianPriorCostFunctor(L_inv)),
+      nullptr,
+      coeffs_ak->data() // Optimizing coeffs_ak
+  );
 
-//     // Set solver options
-//     ceres::Solver::Options options;
-//     options.max_num_iterations = 10;
-//     options.linear_solver_type = ceres::DENSE_QR;
+  // Set solver options
+  ceres::Solver::Options options;
+  options.max_num_iterations = 10;
+  options.linear_solver_type = ceres::DENSE_QR;
 
-//     // Solve the problem
-//     ceres::Solver::Summary summary;
-//     ceres::Solve(options, &problem, &summary);
+  // Solve the problem
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
 
-//     // Print solver summary
-//     std::cout << summary.FullReport() << std::endl;
-// }
+  // Print solver summary
+  std::cout << summary.FullReport() << std::endl;
+}
 
 } // namespace numerics
 } // namespace adi

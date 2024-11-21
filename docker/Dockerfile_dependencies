@@ -56,10 +56,3 @@ RUN wget https://github.com/ceres-solver/ceres-solver/archive/refs/tags/2.2.0.ta
     cd ceres-solver-2.2.0 && mkdir build && cd build && cmake .. -DUSE_CUDA:BOOL=OFF &&\
     make -j  && make install && \
     cd ../.. && rm -rf ceres-solver-2.2.0
-
-# # Install Fastor
-# RUN git clone --depth 1 https://github.com/romeric/Fastor.git /opt/Fastor
-
-# # Copy the repo (adjust path as necessary)
-# WORKDIR /opt
-# COPY ../divergence_free_corr /opt/divergence_free_correspondence

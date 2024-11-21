@@ -74,6 +74,7 @@ Eigen::MatrixXd Matching::computeSoftCorrespondences(
       correspondences(i, j) = numerator / denominator;
     }
   }
+
   return correspondences;
 }
 } // namespace matching

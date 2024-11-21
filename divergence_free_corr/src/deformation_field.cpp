@@ -103,10 +103,8 @@ Eigen::MatrixXd DeformationField::computeVelocityField(
     const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
                          MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
         &vel_basis_functions) {
-  std::cout << "here" << std::endl;
   Eigen::MatrixXd velocity_field_all_pts =
       Eigen::MatrixXd::Zero(NUMBER_OF_SAMPLE_POINTS, 3);
-  std::cout << "here 1" << std::endl;
 
   // Create a Fastor tensor from the Eigen vector of the coefficients of
   // velocity basis functions
