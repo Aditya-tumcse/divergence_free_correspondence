@@ -53,6 +53,32 @@ Eigen::MatrixXd RungeKutta2Integration(
 const double EucledianDistance(const Eigen::Vector3d &point_1,
                                const Eigen::Vector3d &point_2);
 
+template <typename T> class PositionIncrementor {
+public:
+  explicit PositionIncrementor(Eigen::Vector3<T> *updated_pt)
+      : s_updated_pt(updated_pt), s_df() {}
+
+  T *getUpdatedPositions() const { return s_updated_pt; }
+
+  Eigen::Vector3<T> computeVelocityField(const Eigen::VectorX<T> &vel_basis_x,
+                                         const Eigen::VectorX<T> &vel_basis_y,
+                                         const Eigen::VectorX<T> &vel_basis_z,
+                                         const Eigen::VectorX<T> &coeffs);
+
+  void incrementPosition(
+      const Eigen::VectorX<T> &vel_basis_x,
+      const Eigen::VectorX<T> &vel_basis_y,
+      const Eigen::VectorX<T> &vel_basis_z, const Eigen::VectorX<T> &coeffs,
+      const std::vector<adi::deformation_field::BasisIndices> &basis_indices,
+      const double num_time_steps);
+
+  ~PositionIncrementor() = default;
+
+private:
+  Eigen::Vector3<T> *s_updated_pt;
+  adi::deformation_field::DeformationField s_df;
+};
+
 void Optimize(
     const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
                          MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>

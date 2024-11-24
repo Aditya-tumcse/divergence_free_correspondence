@@ -20,5 +20,7 @@ add_executable(main_executable src/main.cpp)
 
 # Link PCL and other dependencies to the main executable
 target_include_directories(main_executable PRIVATE ${PCL_INCLUDE_DIRS} ${Ceres_INCLUDE_DIRS})
-target_link_libraries(main_executable PRIVATE divergence_free_corr ${PCL_LIBRARIES} ${Ceres_LIBRARIES})
+target_link_libraries(main_executable PRIVATE divergence_free_corr ${PCL_LIBRARIES} Ceres::ceres)
+
+
 

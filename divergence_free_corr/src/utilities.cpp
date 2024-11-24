@@ -119,8 +119,6 @@ std::vector<adi::Point> toPointCloud(const Eigen::MatrixXd &cloud) {
     pt.s_point = Eigen::Vector3d(cloud(i, 0), cloud(i, 1), cloud(i, 2));
     point_cloud.push_back(pt);
   }
-  std::cout << "Size of cloud after filtering: " << point_cloud.size()
-            << std::endl;
   return point_cloud;
 }
 
@@ -134,23 +132,6 @@ const Eigen::MatrixXd computeLInv(
   }
 
   return L_inv;
-}
-
-template <typename T>
-Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1>
-L2Norm(const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> &A,
-       const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> &B) {
-  // Compute the squared differences
-  Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> diff =
-      A - B; // Element-wise difference
-  Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> squared_diff =
-      diff.array().square(); // Square of differences
-
-  Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> sum_squared_diff =
-      squared_diff.rowwise().sum();
-
-  // Take the square root to get the L2 norm
-  return std::sqrt(sum_squared_diff);
 }
 
 } // namespace utilities

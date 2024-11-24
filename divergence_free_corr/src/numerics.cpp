@@ -1,7 +1,8 @@
 #include "numerics.hpp"
 #include "../external/include/clue.hpp"
-#include <Fastor/Fastor.h>
+#include "utilities.hpp"
 
+#include <Fastor/Fastor.h>
 #include <eigen3/unsupported/Eigen/CXX11/Tensor>
 #include <random>
 
@@ -81,49 +82,48 @@ Eigen::MatrixXd RungeKutta2Integration(
 }
 
 // template <typename T>
-// Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> RungeKutta2Integration(
-// const std::vector<adi::deformation_field::BasisIndices>& basis_indices,
-// const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3>& src_point_cloud,
-// const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1>& coeffs_ak,
-// const Fastor::Tensor<T, NUMBER_OF_SAMPLE_POINTS,
-// MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>& vel_basis_functions, const
-// uint32_t num_time_steps)
-// {
-//     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> updated_pts =
-//     src_point_cloud;
+// Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> RungeKutta2IntegrationTemplated(
+//     const std::vector<adi::deformation_field::BasisIndices> &basis_indices,
+//     const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> &src_point_cloud,
+//     const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> &coeffs_ak,
+//     const Fastor::Tensor<T, NUMBER_OF_SAMPLE_POINTS,
+//                          MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
+//         &vel_basis_functions,
+//     const uint32_t num_time_steps) {
+//   Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> updated_pts = src_point_cloud;
 
-//     const T dt = T(1.0) / T(num_time_steps);
+//   const T dt = T(1.0) / T(num_time_steps);
 
-//     for (uint32_t t = 0; t < num_time_steps; ++t) {
-//         adi::deformation_field::DeformationField df;
+//   for (uint32_t t = 0; t < num_time_steps; ++t) {
+//     adi::deformation_field::DeformationField df;
 
-//         // Compute initial velocity field at current point positions
-//         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> intermediate_vel_field =
-//             adi::deformation_field::DeformationField::computeVelocityFieldTemplated(coeffs_ak,
-//             vel_basis_functions);
+//     // Compute initial velocity field at current point positions
+//     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> intermediate_vel_field =
+//         adi::deformation_field::DeformationField::computeVelocityFieldTemplated<
+//             T>(coeffs_ak, vel_basis_functions);
 
-//         // Compute midpoint based on current velocity field
-//         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> midpoint = updated_pts;
-//         midpoint.col(0) += T(0.5) * dt * intermediate_vel_field.col(0);
-//         midpoint.col(1) += T(0.5) * dt * intermediate_vel_field.col(1);
-//         midpoint.col(2) += T(0.5) * dt * intermediate_vel_field.col(2);
+//     // Compute midpoint based on current velocity field
+//     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> midpoint = updated_pts;
+//     midpoint.col(0) += T(0.5) * dt * intermediate_vel_field.col(0);
+//     midpoint.col(1) += T(0.5) * dt * intermediate_vel_field.col(1);
+//     midpoint.col(2) += T(0.5) * dt * intermediate_vel_field.col(2);
 
-//         // Update velocity basis functions based on the midpoint positions
-//         auto updated_vel_basis_functions =
+//     // Update velocity basis functions based on the midpoint positions
+//     auto updated_vel_basis_functions =
 //         df.computeVelocityBasisFunctions(basis_indices, midpoint);
 
-//         // Compute updated velocity field at midpoint positions
-//         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> updated_vel_field =
-//             adi::deformation_field::DeformationField::computeVelocityFieldTemplated(coeffs_ak,
-//             updated_vel_basis_functions);
+//     // Compute updated velocity field at midpoint positions
+//     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> updated_vel_field =
+//         adi::deformation_field::DeformationField::computeVelocityFieldTemplated<
+//             T>(coeffs_ak, updated_vel_basis_functions);
 
-//         // Update points with final velocity field
-//         updated_pts.col(0) += dt * updated_vel_field.col(0);
-//         updated_pts.col(1) += dt * updated_vel_field.col(1);
-//         updated_pts.col(2) += dt * updated_vel_field.col(2);
-//     }
+//     // Update points with final velocity field
+//     updated_pts.col(0) += dt * updated_vel_field.col(0);
+//     updated_pts.col(1) += dt * updated_vel_field.col(1);
+//     updated_pts.col(2) += dt * updated_vel_field.col(2);
+//   }
 
-//     return updated_pts;
+//   return updated_pts;
 // }
 
 const double EucledianDistance(const Eigen::Vector3d &point_1,
@@ -131,64 +131,101 @@ const double EucledianDistance(const Eigen::Vector3d &point_1,
   return (point_1 - point_2).norm();
 }
 
-// struct MatchingCostFunctor{
-//     MatchingCostFunctor(const Eigen::MatrixXd &target_point,
-//                         const Eigen::MatrixXd &src_cloud,
-//                         const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
-//                         MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
-//                         &vel_basis_functions, const Eigen::VectorXd weight,
-//                         const
-//                         std::vector<adi::deformation_field::BasisIndices>
-//                         &base_indices) :s_target_point(target_point),
-//                          s_src_cloud(src_cloud),
-//                          s_vel_basis_functions(vel_basis_functions),
-//                          s_weight(weight),
-//                          s_base_indices(base_indices){}
+template <typename T>
+Eigen::Vector3<T> PositionIncrementor<T>::computeVelocityField(
+    const Eigen::VectorX<T> &vel_basis_x, const Eigen::VectorX<T> &vel_basis_y,
+    const Eigen::VectorX<T> &vel_basis_z, const Eigen::VectorX<T> &coeffs) {
+  Eigen::Vector3<T> vel_field;
+  vel_field.setZero();
 
-//     template <typename T>
-//     bool operator()(const T* coeffs_ak, T* residual) const{
-//         // Map coefficients
-//         Eigen::Map<const Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 1>>
-//         coeffs(coeffs_ak, MAX_NUMBER_OF_VELOCITY_BASIS);
+  vel_field[0] = T(vel_basis_x.transpose() * coeffs);
+  vel_field[1] = T(vel_basis_y.transpose() * coeffs);
+  vel_field[2] = T(vel_basis_z.transpose() * coeffs);
 
-//         // Map target cloud points to templated type
-//         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> target_point =
-//         s_target_point.template cast<T>();
+  return vel_field;
+}
 
-//         // Map source points to templated type
-//         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> src_points =
-//         s_src_cloud.template cast<T>();
+template <typename T>
+void PositionIncrementor<T>::incrementPosition(
+    const Eigen::VectorX<T> &vel_basis_x, const Eigen::VectorX<T> &vel_basis_y,
+    const Eigen::VectorX<T> &vel_basis_z, const Eigen::VectorX<T> &coeffs,
+    const std::vector<adi::deformation_field::BasisIndices> &basis_indices,
+    const double num_time_steps) {
 
-//         Fastor::Tensor<T, NUMBER_OF_SAMPLE_POINTS,
-//         MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
-//         templated_vel_basis_functions(s_vel_basis_functions);
+  const T dt = T(1.0) / T(num_time_steps);
 
-//         auto new_src_cloud =
-//         RungeKutta2IntegrationTemplated<T>(s_base_indices, src_points,
-//         coeffs, templated_vel_basis_functions, 10);
+  for (uint32_t t = 0; t < num_time_steps; ++t) {
 
-//         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> residuals =
-//         utilities::L2Norm<T>(new_src_cloud, target_point);
+    Eigen::Vector3<T> intermediate_vel_field = this->computeVelocityField(
+        vel_basis_x, vel_basis_y, vel_basis_z, coeffs);
 
-//         // Compute weighted L2 norms
-//         Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> weighted_residuals =
-//         residuals * s_weight.template cast<T>().array();
+    (*s_updated_pt)[0] += T(0.5) * dt * intermediate_vel_field[0];
+    (*s_updated_pt)[1] += T(0.5) * dt * intermediate_vel_field[1];
+    (*s_updated_pt)[2] += T(0.5) * dt * intermediate_vel_field[2];
 
-//         // Sum the weighted residuals
-//         T total_weighted_residual = weighted_residuals.sum();
+    auto [vel_basis_function_x, vel_basis_function_y, vel_basis_function_z] =
+        s_df.computeVelocityBasisFunctionsPerPoint<T>(basis_indices,
+                                                      *s_updated_pt);
 
-//         residual[0] = total_weighted_residual;
+    Eigen::Vector3<T> final_vel_field =
+        this->computeVelocityField(vel_basis_function_x, vel_basis_function_y,
+                                   vel_basis_function_z, coeffs);
 
-//         return true;
-//     }
+    (*s_updated_pt)[0] += dt * final_vel_field[0];
+    (*s_updated_pt)[1] += dt * final_vel_field[1];
+    (*s_updated_pt)[2] += dt * final_vel_field[2];
+  }
+}
 
-//     const Eigen::MatrixXd &s_target_point;
-//     const Eigen::MatrixXd &s_src_cloud;
-//     const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
-//     MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH> s_vel_basis_functions; const
-//     Eigen::VectorXd s_weight; const
-//     std::vector<adi::deformation_field::BasisIndices> &s_base_indices;
-// };
+struct MatchingCostFunctor {
+  MatchingCostFunctor(
+      const Eigen::Vector3d &source_point, const Eigen::Vector3d &target_point,
+      const Eigen::VectorXd &vel_basis_functions_x,
+      const Eigen::VectorXd &vel_basis_functions_y,
+      const Eigen::VectorXd &vel_basis_functions_z, const double weight,
+      const std::vector<adi::deformation_field::BasisIndices> &base_indices)
+      : s_target_point(target_point), s_source_point(source_point),
+        s_vel_basis_function_x(vel_basis_functions_x),
+        s_vel_basis_function_y(vel_basis_functions_y),
+        s_vel_basis_function_z(vel_basis_functions_z), s_weight(weight),
+        s_base_indices(base_indices) {}
+
+  template <typename T> bool operator()(const T *coeffs_ak, T *residual) const {
+    // Map coefficients to interpret the memory as eigen vector without copying
+    Eigen::Map<const Eigen::VectorX<T>> coeffs(coeffs_ak,
+                                               MAX_NUMBER_OF_VELOCITY_BASIS);
+
+    // Create new vectors of converted types (templated types)
+    Eigen::VectorX<T> t_vel_basis_functions_x =
+        s_vel_basis_function_x.cast<T>();
+    Eigen::VectorX<T> t_vel_basis_functions_y =
+        s_vel_basis_function_y.cast<T>();
+    Eigen::VectorX<T> t_vel_basis_functions_z =
+        s_vel_basis_function_z.cast<T>();
+
+    Eigen::Vector3<T> src_pt = utilities::toTemplatedPoint<T>(s_source_point);
+    Eigen::Vector3<T> target_pt =
+        utilities::toTemplatedPoint<T>(s_target_point);
+
+    Eigen::Vector3<T> updated_pos = src_pt;
+    PositionIncrementor<T> position_incrementor(&updated_pos);
+    position_incrementor.incrementPosition(
+        t_vel_basis_functions_x, t_vel_basis_functions_y,
+        t_vel_basis_functions_z, coeffs, s_base_indices, NUMBER_OF_TIME_STEPS);
+
+    residual[0] = (target_pt - updated_pos).norm() * T(s_weight);
+
+    return true;
+  }
+
+  const Eigen::Vector3d &s_source_point;
+  const Eigen::Vector3d &s_target_point;
+  const Eigen::VectorXd &s_vel_basis_function_x;
+  const Eigen::VectorXd &s_vel_basis_function_y;
+  const Eigen::VectorXd &s_vel_basis_function_z;
+  const double s_weight;
+  const std::vector<adi::deformation_field::BasisIndices> &s_base_indices;
+};
 
 struct GaussianPriorCostFunctor {
   GaussianPriorCostFunctor(const Eigen::MatrixXd &L_inv) : s_L_inv(L_inv) {}
@@ -221,26 +258,25 @@ void Optimize(
   // Prepare the ceres problem
   ceres::Problem problem;
 
-  // for (size_t i = 0; i < target_cloud.size(); ++i) {
-  //   // boradcast the target cloud
-  //   Eigen::MatrixXd broadcasted_target_point =
-  //       Eigen::MatrixXd::Ones(NUMBER_OF_SAMPLE_POINTS, 3);
-  //   broadcasted_target_point.col(0).setConstant(target_cloud.at(i).s_point.x());
-  //   broadcasted_target_point.col(1).setConstant(target_cloud.at(i).s_point.y());
-  //   broadcasted_target_point.col(2).setConstant(target_cloud.at(i).s_point.z());
-
-  //   auto weight = soft_corr_matrix.col(i);
-
-  //   // Create a residual block for this target point
-  //   problem.AddResidualBlock(
-  //       new ceres::AutoDiffCostFunction<MatchingCostFunctor, 1,
-  //                                       MAX_NUMBER_OF_VELOCITY_BASIS>(
-  //           new MatchingCostFunctor(broadcasted_target_point,
-  //                                   utilities::toEigenMatrix(src_cloud),
-  //                                   vel_basis_functions, weight,
-  //                                   base_indices)),
-  //       nullptr, coeffs_ak->data());
-  // }
+  for (size_t i = 0; i < src_cloud.size(); ++i) {
+    Eigen::Vector3d src_point = src_cloud.at(i).s_point;
+    adi::deformation_field::DeformationField df;
+    auto [vel_basis_function_x, vel_basis_function_y, vel_basis_function_z] =
+        df.computeVelocityBasisPerPointPerDimension<double>(
+            vel_basis_functions(i, Fastor::all, Fastor::all));
+    for (size_t j = 0; j < target_cloud.size(); ++j) {
+      Eigen::Vector3d target_point = target_cloud.at(j).s_point;
+      const double weight = soft_corr_matrix(i, j);
+      problem.AddResidualBlock(
+          new ceres::AutoDiffCostFunction<MatchingCostFunctor, 1,
+                                          MAX_NUMBER_OF_VELOCITY_BASIS>(
+              new MatchingCostFunctor(
+                  src_point, target_point, vel_basis_function_x,
+                  vel_basis_function_y, vel_basis_function_z, weight,
+                  base_indices)),
+          nullptr, coeffs_ak->data());
+    }
+  }
 
   // Add Gaussian prior residual block
   problem.AddResidualBlock(

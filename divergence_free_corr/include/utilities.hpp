@@ -1,5 +1,5 @@
 #ifndef UTILITIES_HPP
-#define UTILTIES_HPP
+#define UTILITIES_HPP
 
 #include "deformation_field.hpp"
 #include "io.hpp"
@@ -69,9 +69,14 @@ const Eigen::MatrixXd computeLInv(
     const std::vector<adi::deformation_field::BasisIndices> &basis_indices);
 
 template <typename T>
-Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1>
-L2Norm(const Eigen::Matrix<T, Eigen::Dynamic, 3> &A,
-       const Eigen::Matrix<T, Eigen::Dynamic, 3> &B);
+Eigen::Vector3<T> toTemplatedPoint(const Eigen::Vector3d &pt) {
+  Eigen::Vector3<T> output;
+  output[0] = T(pt.x());
+  output[1] = T(pt.y());
+  output[2] = T(pt.z());
+
+  return output;
+}
 
 } // namespace utilities
 #endif // UTILITIES_HPP

@@ -7,7 +7,6 @@ set(SRC_FILES
     utilities.cpp
     numerics.cpp
     run.cpp
-    main.cpp
 )
 
 # Define a static library for the core functionality
@@ -22,4 +21,4 @@ target_include_directories(divergence_free_corr PUBLIC
 )
 
 # Link libraries to the static library
-target_link_libraries(divergence_free_corr PUBLIC ${PCL_LIBRARIES} ${Ceres_LIBRARIES})
+target_link_libraries(divergence_free_corr PUBLIC ${PCL_LIBRARIES} Ceres::ceres)
