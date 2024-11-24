@@ -41,6 +41,21 @@ GenerateBasisIndices(const uint32_t &max_number_of_velocity_basis) {
   return basis_indices;
 }
 
+const Eigen::MatrixXd computePrecisionMatrix(
+    const std::vector<adi::deformation_field::BasisIndices> &basis_indices) {
+  Eigen::MatrixXd precision_matrix =
+      Eigen::MatrixXd::Identity(basis_indices.size(), basis_indices.size());
+
+  Eigen::VectorXd inverse_eigen_vals =
+      Eigen::VectorXd::Zero(basis_indices.size());
+
+  for (uint32_t i = 0; i < basis_indices.size(); ++i) {
+    inverse_eigen_vals[i] = 1.0 / (basis_indices.at(i).eigen_value);
+  }
+
+  return (precision_matrix * inverse_eigen_vals);
+}
+
 Eigen::MatrixXd RungeKutta2Integration(
     const std::vector<adi::deformation_field::BasisIndices> &basis_indices,
     Eigen::MatrixXd src_point_cloud, const Eigen::VectorXd &coeffs_ak,
@@ -80,51 +95,6 @@ Eigen::MatrixXd RungeKutta2Integration(
 
   return updated_pts;
 }
-
-// template <typename T>
-// Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> RungeKutta2IntegrationTemplated(
-//     const std::vector<adi::deformation_field::BasisIndices> &basis_indices,
-//     const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> &src_point_cloud,
-//     const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 1> &coeffs_ak,
-//     const Fastor::Tensor<T, NUMBER_OF_SAMPLE_POINTS,
-//                          MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
-//         &vel_basis_functions,
-//     const uint32_t num_time_steps) {
-//   Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> updated_pts = src_point_cloud;
-
-//   const T dt = T(1.0) / T(num_time_steps);
-
-//   for (uint32_t t = 0; t < num_time_steps; ++t) {
-//     adi::deformation_field::DeformationField df;
-
-//     // Compute initial velocity field at current point positions
-//     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> intermediate_vel_field =
-//         adi::deformation_field::DeformationField::computeVelocityFieldTemplated<
-//             T>(coeffs_ak, vel_basis_functions);
-
-//     // Compute midpoint based on current velocity field
-//     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> midpoint = updated_pts;
-//     midpoint.col(0) += T(0.5) * dt * intermediate_vel_field.col(0);
-//     midpoint.col(1) += T(0.5) * dt * intermediate_vel_field.col(1);
-//     midpoint.col(2) += T(0.5) * dt * intermediate_vel_field.col(2);
-
-//     // Update velocity basis functions based on the midpoint positions
-//     auto updated_vel_basis_functions =
-//         df.computeVelocityBasisFunctions(basis_indices, midpoint);
-
-//     // Compute updated velocity field at midpoint positions
-//     Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> updated_vel_field =
-//         adi::deformation_field::DeformationField::computeVelocityFieldTemplated<
-//             T>(coeffs_ak, updated_vel_basis_functions);
-
-//     // Update points with final velocity field
-//     updated_pts.col(0) += dt * updated_vel_field.col(0);
-//     updated_pts.col(1) += dt * updated_vel_field.col(1);
-//     updated_pts.col(2) += dt * updated_vel_field.col(2);
-//   }
-
-//   return updated_pts;
-// }
 
 const double EucledianDistance(const Eigen::Vector3d &point_1,
                                const Eigen::Vector3d &point_2) {

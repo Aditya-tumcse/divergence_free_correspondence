@@ -43,6 +43,9 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
       adi::numerics::GenerateBasisIndices(MAX_NUMBER_OF_VELOCITY_BASIS);
   LOG_INFO("Basis indices generated ");
 
+  // Compute covariance matrix of gaussian distribution
+  Eigen::MatrixXd L_inv = adi::numerics::computePrecisionMatrix(base_indices);
+
   // precompute the velocity basis functions as a matrix
   adi::deformation_field::DeformationField df;
   auto vel_basis_functions = df.computeVelocityBasisFunctions(
@@ -83,31 +86,11 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
         updated_cloud, target_downsampled_cloud);
 
     LOG_INFO("Soft correspondences computed");
-    // Compute updated velocity basis functions of the updated cloud
-    // auto vel_basis_functions_updated =
-    //     df.computeVelocityBasisFunctions(base_indices, updated_pts);
-    // LOG_INFO("Completed computing updated velocity field");
+
     // M-step : handled by ceres
-
-    //     // M-step : Gauss Newton optimization
-    //     Eigen::MatrixXd hessian_matrix =
-    //     adi::numerics::ComputeHessian(base_indices, updated_cloud,
-    //     target_downsampled_cloud, soft_corr_matrix, r0);
-
-    //     Eigen::VectorXd gradient =
-    //     adi::numerics::ComputeGradient(base_indices, updated_cloud,
-    //     target_downsampled_cloud, soft_corr_matrix, r0);
-
-    //     Eigen::VectorXd delta_a = -hessian_matrix.ldlt().solve(gradient);
-
-    //     coeffs_ak += delta_a;
-
-    //     std::cout << "Updated coefficients of deformation field for iteration
-    //     " << iter << std::endl; if(delta_a.norm() < TOLERANCE)
-    //     {
-    //         std::cout << "Coefficients of deformation field converged" <<
-    //         std::endl; break;
-    //     }
+    adi::numerics::Optimize(vel_basis_functions, &coeffs_ak,
+                            target_downsampled_cloud, source_downsampled_cloud,
+                            soft_corr_matrix, L_inv, base_indices);
     iter = iter + 1;
     updated_cloud.clear();
   }

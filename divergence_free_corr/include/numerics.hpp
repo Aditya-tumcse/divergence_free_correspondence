@@ -21,6 +21,9 @@ namespace numerics {
 const std::vector<adi::deformation_field::BasisIndices>
 GenerateBasisIndices(const uint32_t &max_number_of_velocity_basis);
 
+const Eigen::MatrixXd computePrecisionMatrix(
+    const std::vector<adi::deformation_field::BasisIndices> &basis_indices);
+
 /**
  * @brief Perform Runge Kutta integration of 2nd order to obtain new positions
  * of the pointcloud to be deformed
