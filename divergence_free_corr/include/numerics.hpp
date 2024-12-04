@@ -44,49 +44,41 @@ Eigen::MatrixXd RungeKutta2Integration(
         &vel_basis_functions,
     const uint32_t num_time_steps);
 
-// template <typename T>
-// Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3> RungeKutta2Integration(
-//     const std::vector<adi::deformation_field::BasisIndices>& basis_indices,
-//     const Eigen::Matrix<T, NUMBER_OF_SAMPLE_POINTS, 3>& src_point_cloud,
-//     const Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 1>& coeffs_ak,
-//     const Fastor::Tensor<T, NUMBER_OF_SAMPLE_POINTS,
-//     MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>& vel_basis_functions, const
-//     uint32_t num_time_steps);
-
 const double EucledianDistance(const Eigen::Vector3d &point_1,
                                const Eigen::Vector3d &point_2);
 
 template <typename T> class PositionIncrementor {
 public:
-  explicit PositionIncrementor(Eigen::Vector3<T> *updated_pt)
-      : s_updated_pt(updated_pt), s_df() {}
+  explicit PositionIncrementor(T *const coeffs) : m_coeffs(coeffs) {}
 
-  T *getUpdatedPositions() const { return s_updated_pt; }
+  T *getCoeffs() const { return m_coeffs; }
 
-  Eigen::Vector3<T> computeVelocityField(const Eigen::VectorX<T> &vel_basis_x,
-                                         const Eigen::VectorX<T> &vel_basis_y,
-                                         const Eigen::VectorX<T> &vel_basis_z,
-                                         const Eigen::VectorX<T> &coeffs);
+  T dot(const Eigen::VectorXd &v1) const {
+    T sum(0);
+    for (int i = 0; i < v1.size(); ++i) {
+      sum += m_coeffs[i] * T(v1[i]);
+    }
+    return sum;
+  }
+
+  void computeVelocityField(const Eigen::VectorXd &vel_basis_x,
+                            const Eigen::VectorXd &vel_basis_y,
+                            const Eigen::VectorXd &vel_basis_z, T *vel_field);
 
   void incrementPosition(
-      const Eigen::VectorX<T> &vel_basis_x,
-      const Eigen::VectorX<T> &vel_basis_y,
-      const Eigen::VectorX<T> &vel_basis_z, const Eigen::VectorX<T> &coeffs,
+      T *to_be_updated_pt, const Eigen::VectorXd &vel_basis_x,
+      const Eigen::VectorXd &vel_basis_y, const Eigen::VectorXd &vel_basis_z,
       const std::vector<adi::deformation_field::BasisIndices> &basis_indices,
       const double num_time_steps);
 
   ~PositionIncrementor() = default;
 
 private:
-  Eigen::Vector3<T> *s_updated_pt;
-  adi::deformation_field::DeformationField s_df;
+  T *m_coeffs;
 };
 
 void Optimize(
-    const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
-                         MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
-        &vel_basis_functions,
-    Eigen::VectorXd *coeffs_ak, const std::vector<adi::Point> &target_cloud,
+    const std::vector<adi::Point> &target_cloud,
     const std::vector<adi::Point> &src_cloud,
     const Eigen::MatrixXd &soft_corr_matrix, const Eigen::MatrixXd &L_inv,
     const std::vector<adi::deformation_field::BasisIndices> &base_indices);

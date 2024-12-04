@@ -4,6 +4,8 @@
 #include "deformation_field.hpp"
 #include "io.hpp"
 
+#include <ceres/jet.h>
+
 namespace utilities {
 /**
  * @brief Compute eucledian distance between 2 points
@@ -69,13 +71,19 @@ const Eigen::MatrixXd computeLInv(
     const std::vector<adi::deformation_field::BasisIndices> &basis_indices);
 
 template <typename T>
-Eigen::Vector3<T> toTemplatedPoint(const Eigen::Vector3d &pt) {
-  Eigen::Vector3<T> output;
+inline void toTemplatedPoint(const Eigen::Vector3d &pt, T *output) {
   output[0] = T(pt.x());
   output[1] = T(pt.y());
   output[2] = T(pt.z());
 
-  return output;
+  return;
+}
+
+template <typename T> void fillVector(T *v1, const Eigen::VectorXd &v2) {
+  for (uint32_t i = 0; i < v2.size(); ++i) {
+    v1[i] = T(v2[i]);
+  }
+  return;
 }
 
 } // namespace utilities

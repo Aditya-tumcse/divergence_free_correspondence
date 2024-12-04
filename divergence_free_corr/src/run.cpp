@@ -22,14 +22,10 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
       target_cloud->getPointCloud();
 
   LOG_INFO("Size of source cloud for processing: "
-           << source_downsampled_cloud.size() << "\n"
-           << "Size of target cloud for processing: "
-           << target_downsampled_cloud.size());
+           << source_downsampled_cloud.size());
 
-  // Serialize downsampled source cloud
-  // adi::pointCloud::serializeCloud(source_downsampled_cloud,
-  // "/workspaces/divergence_free_correspondence/data/source_downsampled_cloud.ply");
-  // std::cout << "Completed writing source downsampled cloud" << std::endl;
+  LOG_INFO("Size of target cloud for processing: "
+           << target_downsampled_cloud.size());
 
   // Compute initial correspondence based on SHOT features
   std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>>
@@ -37,7 +33,6 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
           source_downsampled_cloud, target_downsampled_cloud);
   LOG_INFO("Initial correspondences computed");
 
-  // Gauss Newton optimization looop until convergence
   uint32_t iter = 0;
   std::vector<adi::deformation_field::BasisIndices> base_indices =
       adi::numerics::GenerateBasisIndices(MAX_NUMBER_OF_VELOCITY_BASIS);
@@ -45,35 +40,21 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
 
   // Compute covariance matrix of gaussian distribution
   Eigen::MatrixXd L_inv = adi::numerics::computePrecisionMatrix(base_indices);
+  LOG_INFO("Completed computing precision matrix");
 
   // precompute the velocity basis functions as a matrix
-  adi::deformation_field::DeformationField df;
-  auto vel_basis_functions = df.computeVelocityBasisFunctions(
-      base_indices, utilities::toEigenMatrix(source_downsampled_cloud));
-
-  LOG_INFO("Completed computing velocity basis functions ");
-  Eigen::VectorXd coeffs_ak =
-      Eigen::VectorXd::Zero(MAX_NUMBER_OF_VELOCITY_BASIS);
+  //   adi::deformation_field::DeformationField df;
+  //   auto vel_basis_functions = df.computeVelocityBasisFunctions(
+  //       base_indices, utilities::toEigenMatrix(source_downsampled_cloud));
 
   // Update point cloud Y with the current deformation field
   while (iter < MAX_NUMBER_OF_ITERS) {
     // RK2 integration
-    auto start = std::chrono::high_resolution_clock::now();
-    Eigen::MatrixXd updated_pts = adi::numerics::RungeKutta2Integration(
-        base_indices, utilities::toEigenMatrix(source_downsampled_cloud),
-        coeffs_ak, vel_basis_functions, NUMBER_OF_TIME_STEPS);
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::vector<adi::Point> updated_cloud =
-        utilities::toPointCloud(updated_pts);
-
-    std::chrono::duration<double, std::milli> duration = end - start;
-    LOG_INFO("Time taken (in milliseconds) for "
-             << NUMBER_OF_TIME_STEPS
-             << " time steps of RK2 integration: " << duration.count());
-
-    LOG_INFO(" Size of updated cloud: " << updated_cloud.size());
-    LOG_INFO(" Completed RK integration for iteration: " << iter);
+    // auto start = std::chrono::high_resolution_clock::now();
+    // Eigen::MatrixXd updated_pts = adi::numerics::RungeKutta2Integration(
+    //     base_indices, utilities::toEigenMatrix(source_downsampled_cloud),
+    //     coeffs_ak, vel_basis_functions, NUMBER_OF_TIME_STEPS);
+    // auto end = std::chrono::high_resolution_clock::now();
 
     // Serialize downsampled source cloud
     // adi::pointCloud::serializeCloud(updated_cloud,
@@ -83,16 +64,15 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
     // E-step : Compute soft correspondences
     auto matches = adi::matching::Matching(*initial_correspondences);
     Eigen::MatrixXd soft_corr_matrix = matches.computeSoftCorrespondences(
-        updated_cloud, target_downsampled_cloud);
+        source_downsampled_cloud, target_downsampled_cloud);
 
     LOG_INFO("Soft correspondences computed");
 
     // M-step : handled by ceres
-    adi::numerics::Optimize(vel_basis_functions, &coeffs_ak,
-                            target_downsampled_cloud, source_downsampled_cloud,
+    adi::numerics::Optimize(target_downsampled_cloud, source_downsampled_cloud,
                             soft_corr_matrix, L_inv, base_indices);
     iter = iter + 1;
-    updated_cloud.clear();
+    // updated_cloud.clear();
   }
 
   // for(size_t a_k_i = 0;a_k_i < coeffs_ak.size();++a_k_i)

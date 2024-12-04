@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <ceres/ceres.h>
+#include <ceres/jet.h>
 #include <eigen3/Eigen/Dense>
 
 namespace adi {
@@ -21,6 +22,14 @@ struct BasisIndices {
   uint32_t index_3;
   double eigen_value;
 };
+
+template <typename T> double getValue(const T &x) {
+  return x; // For non-Jet types (like double)
+}
+
+template <typename T, int N> double getValue(const ceres::Jet<T, N> &x) {
+  return x.a; // For Jet types
+}
 
 class DeformationField {
 public:
@@ -65,92 +74,57 @@ public:
                                 const Eigen::MatrixXd &points);
 
   template <typename T>
-  std::tuple<Eigen::VectorX<T>, Eigen::VectorX<T>, Eigen::VectorX<T>>
+  Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 3>
   computeVelocityBasisPerPointPerDimension(
       const Fastor::Tensor<T, 1, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
           &vel_basis_per_point) {
-    // Fastor::Tensor<T, MAX_NUMBER_OF_VELOCITY_BASIS> vel_basis_per_point_x;
-    // Fastor::Tensor<T, MAX_NUMBER_OF_VELOCITY_BASIS> vel_basis_per_point_y;
-    // Fastor::Tensor<T, MAX_NUMBER_OF_VELOCITY_BASIS> vel_basis_per_point_z;
-    // vel_basis_per_point_x.zeros();
-    // vel_basis_per_point_y.zeros();
-    // vel_basis_per_point_z.zeros();
-    Eigen::VectorX<T> vel_basis_x;
-    vel_basis_x.setZero();
-    Eigen::VectorX<T> vel_basis_y;
-    vel_basis_y.setZero();
-    Eigen::VectorX<T> vel_basis_z;
-    vel_basis_z.setZero();
+    Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 3> vel_basis_functions;
 
-    // vel_basis_per_point_x = vel_basis_per_point(Fastor::all, Fastor::all, 0)
-    // +
-    //                         vel_basis_per_point(Fastor::all, Fastor::all, 3)
-    //                         + vel_basis_per_point(Fastor::all, Fastor::all,
-    //                         6);
-    // vel_basis_per_point_y = vel_basis_per_point(Fastor::all, Fastor::all, 1)
-    // +
-    //                         vel_basis_per_point(Fastor::all, Fastor::all, 4)
-    //                         + vel_basis_per_point(Fastor::all, Fastor::all,
-    //                         7);
-    // vel_basis_per_point_z = vel_basis_per_point(Fastor::all, Fastor::all, 2)
-    // +
-    //                         vel_basis_per_point(Fastor::all, Fastor::all, 5)
-    //                         + vel_basis_per_point(Fastor::all, Fastor::all,
-    //                         8);
-
-    // Eigen::VectorX<T> vel_basis_x = Eigen::Map<Eigen::VectorX<T>>(
-    //     vel_basis_per_point_x.data(), MAX_NUMBER_OF_VELOCITY_BASIS);
-    // Eigen::VectorX<T> vel_basis_y = Eigen::Map<Eigen::VectorX<T>>(
-    //     vel_basis_per_point_y.data(), MAX_NUMBER_OF_VELOCITY_BASIS);
-    // Eigen::VectorX<T> vel_basis_z = Eigen::Map<Eigen::VectorX<T>>(
-    //     vel_basis_per_point_z.data(), MAX_NUMBER_OF_VELOCITY_BASIS);
     for (size_t j = 0; j < MAX_NUMBER_OF_VELOCITY_BASIS; ++j) {
-      vel_basis_x(j) = vel_basis_per_point(0, j, 0) +
-                       vel_basis_per_point(0, j, 3) +
-                       vel_basis_per_point(0, j, 6);
+      vel_basis_functions(j, 0) = vel_basis_per_point(0, j, 0) +
+                                  vel_basis_per_point(0, j, 3) +
+                                  vel_basis_per_point(0, j, 6);
 
-      vel_basis_y(j) = vel_basis_per_point(0, j, 1) +
-                       vel_basis_per_point(0, j, 4) +
-                       vel_basis_per_point(0, j, 7);
+      vel_basis_functions(j, 1) = vel_basis_per_point(0, j, 1) +
+                                  vel_basis_per_point(0, j, 4) +
+                                  vel_basis_per_point(0, j, 7);
 
-      vel_basis_z(j) = vel_basis_per_point(0, j, 2) +
-                       vel_basis_per_point(0, j, 5) +
-                       vel_basis_per_point(0, j, 8);
+      vel_basis_functions(j, 2) = vel_basis_per_point(0, j, 2) +
+                                  vel_basis_per_point(0, j, 5) +
+                                  vel_basis_per_point(0, j, 8);
     }
-
-    return std::make_tuple(vel_basis_x, vel_basis_y, vel_basis_z);
+    return vel_basis_functions;
   }
 
   template <typename T>
-  std::tuple<Eigen::VectorX<T>, Eigen::VectorX<T>, Eigen::VectorX<T>>
+  Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 3>
   computeVelocityBasisFunctionsPerPoint(
       const std::vector<BasisIndices> &basis_indices,
       const Eigen::Vector3<T> &point) {
     Fastor::Tensor<T, 1, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
         vel_basis_functions_per_point;
-    // vel_basis_functions_per_point.zeros();
 
     for (uint32_t i = 0; i < MAX_NUMBER_OF_VELOCITY_BASIS; ++i) {
-      vel_basis_functions_per_point(0, i, 0) = T(0);
+      vel_basis_functions_per_point(0, i, 0) = T(0.0);
       vel_basis_functions_per_point(0, i, 1) =
           dphidz_per_point<T>(basis_indices.at(i), point);
       vel_basis_functions_per_point(0, i, 2) =
           -dphidy_per_point<T>(basis_indices.at(i), point);
       vel_basis_functions_per_point(0, i, 3) =
-          vel_basis_functions_per_point(0, i, 4) = T(0);
-      -vel_basis_functions_per_point(0, i, 1);
+          -vel_basis_functions_per_point(0, i, 1);
+      vel_basis_functions_per_point(0, i, 4) = T(0.0);
       vel_basis_functions_per_point(0, i, 5) =
           dphidx_per_point<T>(basis_indices.at(i), point);
       vel_basis_functions_per_point(0, i, 6) =
           -vel_basis_functions_per_point(0, i, 2);
       vel_basis_functions_per_point(0, i, 7) =
           -vel_basis_functions_per_point(0, i, 5);
-      vel_basis_functions_per_point(0, i, 8) = T(0);
+      vel_basis_functions_per_point(0, i, 8) = T(0.0);
     }
 
-    std::tuple<Eigen::VectorX<T>, Eigen::VectorX<T>, Eigen::VectorX<T>>
+    Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 3>
         vel_basis_per_point_per_dimension =
-            computeVelocityBasisPerPointPerDimension<T>(
+            computeVelocityBasisPerPointPerDimension(
                 vel_basis_functions_per_point);
 
     return vel_basis_per_point_per_dimension;
@@ -171,16 +145,16 @@ private:
    */
   Fastor::Tensor<double, 1> dphidx(const BasisIndices basis_indices,
                                    const Eigen::MatrixXd &pts);
+  template <typename T>
+  T dphidx_per_point(const BasisIndices &basis_indices,
+                     const Eigen::Vector3<T> &point) {
+    T dphidx_per_point;
 
-  template <typename P>
-  P dphidx_per_point(const BasisIndices &basis_indices,
-                     const Eigen::Vector3<P> &point) {
-    P dphidx_per_point;
-
-    dphidx_per_point = 0.125 * M_PI * basis_indices.index_1 *
-                       ceres::cos(M_PI * basis_indices.index_1 * point[0]) *
-                       ceres::sin(M_PI * basis_indices.index_2 * point[1]) *
-                       ceres::sin(M_PI * basis_indices.index_3 * point[2]);
+    dphidx_per_point =
+        T(0.125) * T(M_PI) * T(basis_indices.index_1) *
+        ceres::cos(T(M_PI) * T(basis_indices.index_1) * T(point[0])) *
+        ceres::sin(T(M_PI) * T(basis_indices.index_2) * T(point[1])) *
+        ceres::sin(T(M_PI) * T(basis_indices.index_3) * T(point[2]));
 
     return dphidx_per_point;
   }
@@ -198,15 +172,16 @@ private:
   Fastor::Tensor<double, 1> dphidy(const BasisIndices basis_indices,
                                    const Eigen::MatrixXd &pts);
 
-  template <typename P>
-  P dphidy_per_point(const BasisIndices &basis_indices,
-                     const Eigen::Vector3<P> &point) {
-    P dphidy_per_point;
+  template <typename T>
+  T dphidy_per_point(const BasisIndices &basis_indices,
+                     const Eigen::Vector3<T> &point) {
+    T dphidy_per_point;
 
-    dphidy_per_point = 0.125 * M_PI * basis_indices.index_2 *
-                       ceres::sin(M_PI * basis_indices.index_1 * point[0]) *
-                       ceres::cos(M_PI * basis_indices.index_2 * point[1]) *
-                       ceres::sin(M_PI * basis_indices.index_3 * point[2]);
+    dphidy_per_point =
+        T(0.125) * T(M_PI) * T(basis_indices.index_2) *
+        ceres::sin(T(M_PI) * T(basis_indices.index_1) * T(point[0])) *
+        ceres::cos(T(M_PI) * T(basis_indices.index_2) * T(point[1])) *
+        ceres::sin(T(M_PI) * T(basis_indices.index_3) * T(point[2]));
 
     return dphidy_per_point;
   }
@@ -224,15 +199,16 @@ private:
   Fastor::Tensor<double, 1> dphidz(const BasisIndices basis_indices,
                                    const Eigen::MatrixXd &pts);
 
-  template <typename P>
-  P dphidz_per_point(const BasisIndices &basis_indices,
-                     const Eigen::Vector3<P> &point) {
-    P dphidz_per_point;
+  template <typename T>
+  T dphidz_per_point(const BasisIndices &basis_indices,
+                     const Eigen::Vector3<T> &point) {
+    T dphidz_per_point;
 
-    dphidz_per_point = 0.125 * M_PI * basis_indices.index_3 *
-                       ceres::sin(M_PI * basis_indices.index_1 * point[0]) *
-                       ceres::sin(M_PI * basis_indices.index_2 * point[1]) *
-                       ceres::cos(M_PI * basis_indices.index_3 * point[2]);
+    dphidz_per_point =
+        T(0.125) * T(M_PI) * T(basis_indices.index_3) *
+        ceres::sin(T(M_PI) * T(basis_indices.index_1) * T(point[0])) *
+        ceres::sin(T(M_PI) * T(basis_indices.index_2) * T(point[1])) *
+        ceres::cos(T(M_PI) * T(basis_indices.index_3) * T(point[2]));
 
     return dphidz_per_point;
   }

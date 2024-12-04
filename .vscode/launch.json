@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "div_free_corr",
+            "name": "main_executable",
             "type": "cppdbg",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/build/src/divergence_free_corr",
+            "program": "${workspaceFolder}/build/main_executable",
             "MIMode": "gdb",
             "setupCommands": [
                 {
