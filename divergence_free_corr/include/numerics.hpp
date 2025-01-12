@@ -59,12 +59,7 @@ T computeResidual(const T *source_pt, const T *target_pt, const T weight) {
       (target_pt[1] - source_pt[1]) * (target_pt[1] - source_pt[1]) +
       (target_pt[2] - source_pt[2]) * (target_pt[2] - source_pt[2]);
 
-  // std::cout << "Squared distance: " << diff_squared << std::endl;
-  // std::cout << "Weight: " << weight << std::endl;
-
-  // T result = weight * ceres::sqrt(diff_squared);
-  T result = ceres::sqrt(diff_squared);
-  // std::cout << "Final residual: " << result << std::endl;
+  T result = weight * ceres::sqrt(diff_squared);
 
   return result;
 }
