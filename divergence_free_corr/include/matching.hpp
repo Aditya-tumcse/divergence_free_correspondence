@@ -35,9 +35,12 @@ private:
 
   const double computeMeanDescriptorDistance();
 
+  const double ComputeScalingFactor();
+
   const Eigen::MatrixXd
   computeMetricDistance(const std::vector<adi::Point> &source_point_cloud,
-                        const std::vector<adi::Point> &target_point_cloud);
+                        const std::vector<adi::Point> &target_point_cloud,
+                        const double &scaling_factor);
 };
 } // namespace matching
 } // namespace adi
