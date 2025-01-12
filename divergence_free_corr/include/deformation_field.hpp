@@ -99,7 +99,8 @@ public:
   template <typename T>
   Eigen::Matrix<T, MAX_NUMBER_OF_VELOCITY_BASIS, 3>
   computeVelocityBasisFunctionsPerPoint(
-      const std::vector<BasisIndices> &basis_indices,
+      const std::array<BasisIndices, MAX_NUMBER_OF_VELOCITY_BASIS>
+          &basis_indices,
       const Eigen::Vector3<T> &point) {
     Fastor::Tensor<T, 1, MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
         vel_basis_functions_per_point;

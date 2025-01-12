@@ -5,6 +5,7 @@
 #include "io.hpp"
 
 #include <ceres/jet.h>
+#include <random>
 
 namespace utilities {
 /**
@@ -84,6 +85,21 @@ template <typename T> void fillVector(T *v1, const Eigen::VectorXd &v2) {
     v1[i] = T(v2[i]);
   }
   return;
+}
+
+template <typename T>
+void fillArray(T *v1,
+               const std::array<adi::deformation_field::BasisIndices,
+                                MAX_NUMBER_OF_VELOCITY_BASIS> &basis_indices) {
+  // random number generator
+  std::random_device rd;
+  std::mt19937 gen(rd());
+
+  for (uint32_t i = 0; i < MAX_NUMBER_OF_VELOCITY_BASIS; ++i) {
+    std::normal_distribution<double> dist(
+        0.0, std::sqrt(basis_indices[i].eigen_value));
+    v1[i] = dist(gen);
+  }
 }
 
 } // namespace utilities

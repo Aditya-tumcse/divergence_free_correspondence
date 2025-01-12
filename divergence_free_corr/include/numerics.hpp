@@ -11,6 +11,12 @@
 
 namespace adi {
 namespace numerics {
+
+const std::array<adi::deformation_field::BasisIndices,
+                 MAX_NUMBER_OF_VELOCITY_BASIS>
+GetUniqueBasisIndices(
+    const std::vector<adi::deformation_field::BasisIndices> &basis_indices);
+
 /**
  * @brief Generate vector of deformation field basis indices
  *
@@ -18,11 +24,13 @@ namespace numerics {
  *
  * @return Vector of deformation field basis indices
  */
-const std::vector<adi::deformation_field::BasisIndices>
+const std::array<adi::deformation_field::BasisIndices,
+                 MAX_NUMBER_OF_VELOCITY_BASIS>
 GenerateBasisIndices(const uint32_t &max_number_of_velocity_basis);
 
 const Eigen::MatrixXd computePrecisionMatrix(
-    const std::vector<adi::deformation_field::BasisIndices> &basis_indices);
+    const std::array<adi::deformation_field::BasisIndices,
+                     MAX_NUMBER_OF_VELOCITY_BASIS> &basis_indices);
 
 /**
  * @brief Perform Runge Kutta integration of 2nd order to obtain new positions
@@ -44,8 +52,22 @@ Eigen::MatrixXd RungeKutta2Integration(
         &vel_basis_functions,
     const uint32_t num_time_steps);
 
-const double EucledianDistance(const Eigen::Vector3d &point_1,
-                               const Eigen::Vector3d &point_2);
+template <typename T>
+T computeResidual(const T *source_pt, const T *target_pt, const T weight) {
+  T diff_squared =
+      (target_pt[0] - source_pt[0]) * (target_pt[0] - source_pt[0]) +
+      (target_pt[1] - source_pt[1]) * (target_pt[1] - source_pt[1]) +
+      (target_pt[2] - source_pt[2]) * (target_pt[2] - source_pt[2]);
+
+  // std::cout << "Squared distance: " << diff_squared << std::endl;
+  // std::cout << "Weight: " << weight << std::endl;
+
+  // T result = weight * ceres::sqrt(diff_squared);
+  T result = ceres::sqrt(diff_squared);
+  // std::cout << "Final residual: " << result << std::endl;
+
+  return result;
+}
 
 template <typename T> class PositionIncrementor {
 public:
@@ -68,7 +90,8 @@ public:
   void incrementPosition(
       T *to_be_updated_pt, const Eigen::VectorXd &vel_basis_x,
       const Eigen::VectorXd &vel_basis_y, const Eigen::VectorXd &vel_basis_z,
-      const std::vector<adi::deformation_field::BasisIndices> &basis_indices,
+      const std::array<adi::deformation_field::BasisIndices,
+                       MAX_NUMBER_OF_VELOCITY_BASIS> &basis_indices,
       const double num_time_steps);
 
   ~PositionIncrementor() = default;
@@ -77,11 +100,12 @@ private:
   T *m_coeffs;
 };
 
-void Optimize(
-    const std::vector<adi::Point> &target_cloud,
-    const std::vector<adi::Point> &src_cloud,
-    const Eigen::MatrixXd &soft_corr_matrix, const Eigen::MatrixXd &L_inv,
-    const std::vector<adi::deformation_field::BasisIndices> &base_indices);
+void Optimize(const std::vector<adi::Point> &target_cloud,
+              const std::vector<adi::Point> &src_cloud,
+              const Eigen::MatrixXd &soft_corr_matrix,
+              const Eigen::MatrixXd &L_inv,
+              const std::array<adi::deformation_field::BasisIndices,
+                               MAX_NUMBER_OF_VELOCITY_BASIS> &base_indices);
 } // namespace numerics
 } // namespace adi
 #endif

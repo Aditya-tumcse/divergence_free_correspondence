@@ -34,33 +34,17 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
   LOG_INFO("Initial correspondences computed");
 
   uint32_t iter = 0;
-  std::vector<adi::deformation_field::BasisIndices> base_indices =
-      adi::numerics::GenerateBasisIndices(MAX_NUMBER_OF_VELOCITY_BASIS);
+  std::array<adi::deformation_field::BasisIndices, MAX_NUMBER_OF_VELOCITY_BASIS>
+      base_indices =
+          adi::numerics::GenerateBasisIndices(MAX_NUMBER_OF_VELOCITY_BASIS);
   LOG_INFO("Basis indices generated ");
 
   // Compute covariance matrix of gaussian distribution
   Eigen::MatrixXd L_inv = adi::numerics::computePrecisionMatrix(base_indices);
   LOG_INFO("Completed computing precision matrix");
 
-  // precompute the velocity basis functions as a matrix
-  //   adi::deformation_field::DeformationField df;
-  //   auto vel_basis_functions = df.computeVelocityBasisFunctions(
-  //       base_indices, utilities::toEigenMatrix(source_downsampled_cloud));
-
   // Update point cloud Y with the current deformation field
   while (iter < MAX_NUMBER_OF_ITERS) {
-    // RK2 integration
-    // auto start = std::chrono::high_resolution_clock::now();
-    // Eigen::MatrixXd updated_pts = adi::numerics::RungeKutta2Integration(
-    //     base_indices, utilities::toEigenMatrix(source_downsampled_cloud),
-    //     coeffs_ak, vel_basis_functions, NUMBER_OF_TIME_STEPS);
-    // auto end = std::chrono::high_resolution_clock::now();
-
-    // Serialize downsampled source cloud
-    // adi::pointCloud::serializeCloud(updated_cloud,
-    // "/workspaces/divergence_free_correspondence/data/source_cloud_updated.ply");
-    // std::cout << "Completed writing updated source cloud" << std::endl;
-
     // E-step : Compute soft correspondences
     auto matches = adi::matching::Matching(*initial_correspondences);
     Eigen::MatrixXd soft_corr_matrix = matches.computeSoftCorrespondences(
@@ -75,9 +59,8 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
     // updated_cloud.clear();
   }
 
-  // for(size_t a_k_i = 0;a_k_i < coeffs_ak.size();++a_k_i)
-  // {
-  //     std::cout << coeffs_ak[a_k_i] << std::endl;
+  // for (size_t a_k_i = 0; a_k_i < coeffs_ak.size(); ++a_k_i) {
+  //   std::cout << coeffs_ak[a_k_i] << std::endl;
   // }
   return;
 }
