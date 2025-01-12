@@ -11,16 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     git \
     wget \
-    libboost-all-dev \
-    libusb-1.0-0-dev \
+    libboost-system-dev \
+    libboost-filesystem-dev \
+    libboost-thread-dev \
+    libboost-date-time-dev \
+    libboost-iostreams-dev \
     libflann-dev \
-    libvtk7-dev \
-    libopenni2-dev \
-    libpcap-dev \
-    libpng-dev \
     libqhull-dev \
-    libglew-dev \
-    freeglut3-dev \
     pkg-config \
     ca-certificates \
     libsuitesparse-dev \
@@ -28,6 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgoogle-glog-dev \
     libgflags-dev \
     libatlas-base-dev \
+    libmetis-dev \
+    libpcap-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install specific version of Eigen (3.4.0)
@@ -39,42 +38,32 @@ RUN wget -q https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
     make install && \
     cd ../../ && rm -rf eigen-3.4.0.tar.gz eigen-3.4.0
 
-# Install Abseil library (needed for Ceres)
-RUN git clone --depth 1 https://github.com/abseil/abseil-cpp.git /abseil && \
-    cd /abseil && \
-    mkdir build && cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
+# Clone and build PCL
+RUN git clone --depth 1 https://github.com/PointCloudLibrary/pcl.git /pcl && \
+    cd /pcl && mkdir build && cd build && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_STANDARD=20 \
+        -DWITH_VTK=OFF \
+        -DWITH_QT=OFF \
+        -DWITH_OPENGL=OFF \
+        -DWITH_PNG=OFF \
+        -DWITH_RSSDK=OFF \
+        -DBUILD_visualization=OFF \
+        -DBUILD_apps=OFF \
+        -DBUILD_tools=OFF \
+        -DBUILD_examples=OFF \
+        -DBUILD_global_tests=OFF \
+        && \
+    make -j$(nproc) && make install && \
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && \
     ldconfig && \
-    cd ../.. && rm -rf /abseil
-
-# Clone the PCL repository
-RUN git clone --depth 1 https://github.com/PointCloudLibrary/pcl.git /pcl
-
-# Create a build directory for PCL
-WORKDIR /pcl/build
-
-# Build PCL using CMake
-RUN cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig && \
-    cd ../.. && rm -rf /pcl
+    cd ../../ && rm -rf /pcl
 
 # Install Ceres Solver
-RUN git clone --depth 1 https://ceres-solver.googlesource.com/ceres-solver /ceres-solver && \
-    mkdir /ceres-solver/build && \
-    cd /ceres-solver/build && \
-    cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_CERES_EXAMPLES=OFF -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -Dabsl_VERSION=20210324.0.0 && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig && \
-    cd ../.. && rm -rf /ceres-solver
-
-# Install Fastor
-RUN git clone --depth 1 https://github.com/romeric/Fastor.git /opt/Fastor
-
-# Copy the repo (adjust path as necessary)
-WORKDIR /opt
-COPY ../divergence_free_corr /opt/divergence_free_correspondence
+RUN wget https://github.com/ceres-solver/ceres-solver/archive/refs/tags/2.2.0.tar.gz && \
+    tar -xf 2.2.0.tar.gz && \
+    rm 2.2.0.tar.gz && \
+    cd ceres-solver-2.2.0 && mkdir build && cd build && cmake .. -DUSE_CUDA:BOOL=OFF &&\
+    make -j  && make install && \
+    cd ../.. && rm -rf ceres-solver-2.2.0
