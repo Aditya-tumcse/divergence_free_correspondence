@@ -11,16 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     git \
     wget \
-    libboost-all-dev \
-    libusb-1.0-0-dev \
+    libboost-system-dev \
+    libboost-filesystem-dev \
+    libboost-thread-dev \
+    libboost-date-time-dev \
+    libboost-iostreams-dev \
     libflann-dev \
-    libvtk7-dev \
-    libopenni2-dev \
-    libpcap-dev \
-    libpng-dev \
     libqhull-dev \
-    libglew-dev \
-    freeglut3-dev \
     pkg-config \
     ca-certificates \
     libsuitesparse-dev \
@@ -29,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgflags-dev \
     libatlas-base-dev \
     libmetis-dev \
+    libpcap-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install specific version of Eigen (3.4.0)
@@ -43,7 +41,20 @@ RUN wget -q https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
 # Clone and build PCL
 RUN git clone --depth 1 https://github.com/PointCloudLibrary/pcl.git /pcl && \
     cd /pcl && mkdir build && cd build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_STANDARD=20 \
+        -DWITH_VTK=OFF \
+        -DWITH_QT=OFF \
+        -DWITH_OPENGL=OFF \
+        -DWITH_PNG=OFF \
+        -DWITH_RSSDK=OFF \
+        -DBUILD_visualization=OFF \
+        -DBUILD_apps=OFF \
+        -DBUILD_tools=OFF \
+        -DBUILD_examples=OFF \
+        -DBUILD_global_tests=OFF \
+        && \
     make -j$(nproc) && make install && \
     echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && \
     ldconfig && \
