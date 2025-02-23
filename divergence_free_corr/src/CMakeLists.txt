@@ -6,6 +6,7 @@ set(SRC_FILES
     deformation_field.cpp
     utilities.cpp
     numerics.cpp
+    parallel_optimizer.cpp
     run.cpp
 )
 
