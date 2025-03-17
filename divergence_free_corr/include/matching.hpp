@@ -4,6 +4,7 @@
 #include "io.hpp"
 
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/SparseCore>
 
 namespace adi {
 namespace matching {
@@ -22,7 +23,7 @@ public:
    * @return Eigen matrix of soft correspondences between source and target
    * pointcloud
    */
-  Eigen::MatrixXd
+  Eigen::SparseMatrix<double>
   computeSoftCorrespondences(const std::vector<adi::Point> &source_point_cloud,
                              const std::vector<adi::Point> &target_point_cloud);
 

@@ -5,7 +5,8 @@ namespace parallel_optimizer {
 void ParallelOptimizer::Optimize(
     const std::vector<adi::Point> &target_cloud,
     const std::vector<adi::Point> &src_cloud,
-    const Eigen::MatrixXd &soft_corr_matrix, const Eigen::MatrixXd &L_inv,
+    const Eigen::SparseMatrix<double> &soft_corr_matrix,
+    const Eigen::MatrixXd &L_inv,
     const std::array<adi::deformation_field::BasisIndices,
                      MAX_NUMBER_OF_VELOCITY_BASIS> &base_indices) {
   // Prepare the ceres problem
@@ -84,7 +85,7 @@ void *ParallelOptimizer::ProcessChunk(void *arg) {
       Eigen::Vector3d target_point = tws->target_cloud->at(j).s_point;
 
       // TODO: WEIGHTS CAN BE APPLIED TO THE LOSS
-      const double weight = tws->soft_corr_matrix->coeffRef(i, j);
+      const double weight = tws->soft_corr_matrix->coeff(i, j);
       if (std::isnan(weight))
         continue;
 

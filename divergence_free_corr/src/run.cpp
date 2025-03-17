@@ -49,8 +49,12 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
   while (iter < MAX_NUMBER_OF_ITERS) {
     // E-step : Compute soft correspondences
     auto matches = adi::matching::Matching(*initial_correspondences);
-    Eigen::MatrixXd soft_corr_matrix = matches.computeSoftCorrespondences(
-        source_downsampled_cloud, target_downsampled_cloud);
+
+    // TODO: Store soft correspondence matrix as a sparse matrix rather than a
+    // dense matrix
+    Eigen::SparseMatrix<double> soft_corr_matrix =
+        matches.computeSoftCorrespondences(source_downsampled_cloud,
+                                           target_downsampled_cloud);
 
     LOG_INFO("Soft correspondences computed");
 

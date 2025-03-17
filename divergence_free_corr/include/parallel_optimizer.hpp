@@ -2,11 +2,11 @@
 #define PARALLEL_OPTIMIZER_HPP
 
 #include <ceres/ceres.h>
-#include <eigen3/Eigen/Dense>
 #include <pthread.h>
 
 #include "deformation_field.hpp"
 #include "io.hpp"
+#include "matching.hpp"
 #include "numerics.hpp"
 #include "utilities.hpp"
 
@@ -21,7 +21,7 @@ public:
 
   void Optimize(const std::vector<adi::Point> &target_cloud,
                 const std::vector<adi::Point> &src_cloud,
-                const Eigen::MatrixXd &soft_corr_matrix,
+                const Eigen::SparseMatrix<double> &soft_corr_matrix,
                 const Eigen::MatrixXd &L_inv,
                 const std::array<adi::deformation_field::BasisIndices,
                                  MAX_NUMBER_OF_VELOCITY_BASIS> &base_indices);
@@ -37,7 +37,7 @@ private:
     ceres::Problem *problem;
     const std::vector<adi::Point> *src_cloud;
     const std::vector<adi::Point> *target_cloud;
-    const Eigen::MatrixXd *soft_corr_matrix;
+    const Eigen::SparseMatrix<double> *soft_corr_matrix;
     adi::numerics::PositionIncrementor<double> *position_incrementor;
     const std::array<adi::deformation_field::BasisIndices,
                      MAX_NUMBER_OF_VELOCITY_BASIS> *base_indices;
