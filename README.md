@@ -1,4 +1,4 @@
-### Divergence Free Correspondence
+# Divergence Free Correspondence
 
 ## Introduction
 
@@ -17,11 +17,11 @@ DVF provides a robust solution for manipulating and deforming 3D point cloud dat
 ## Technical Challenges and Solutions
 This section documents the major technical challenges encountered and the approaches used to solve them
 
-# 1. Computational Efficiency
+### 1. Computational Efficiency
  - Processing large point clouds within reasonable time constraints using efficient custom implementation of parallelised adjustable farthest point sampling
  - Efficient storage of soft correspondence matrix as a sparse matrix
 
-# 2. Deformation Field Prediction
+### 2. Deformation Field Prediction
  - Computation of low frequency velocity basis functions
  - Optimization of velocity field coefficients based on automatic differentiation
  - Tensor representation of velocity basis functions making the computations faster
