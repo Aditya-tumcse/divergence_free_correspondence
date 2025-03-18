@@ -34,7 +34,7 @@ divergence_free_correspondence/
 ├ divergence_free_corr/
 | ├ external/                   # External dependencies folder
 | | ├ Fastor/                   # Fastor repo header files
-| | ├ clue.hpp                  # Logging repo header files
+| | └ clue.hpp                  # Logging repo header files
 | ├ include/                    # Folder containing the header files
 | | ├ constants.hpp             # Contains the constant expressions used in the project
 | | ├ deformation_field.hpp     # Deformation field related computations 
@@ -44,7 +44,7 @@ divergence_free_correspondence/
 | | ├ numerics.hpp              # Numerical time integration schemes
 | | ├ parallel_optimizer.hpp    # Parallel implementation of optimizer
 | | ├ run.hpp                   # Header for the run function
-| | ├ utilities.hpp             # Utility components
+| | └ utilities.hpp             # Utility components
 | ├ src/                        # Folder containing the corresponding cpp files
 | | ├ CMakeLists.txt
 | | ├ deformation_field.cpp
@@ -55,15 +55,15 @@ divergence_free_correspondence/
 | | ├ numerics.cpp
 | | ├ parallel_optimizer.cpp
 | | ├ run.cpp
-| | ├ utilities.cpp
-| ├ CMakeLists.txt              # Main CMake configuration file
+| | └ utilities.cpp
+| └ CMakeLists.txt              # Main CMake configuration file
 ├ data/                         # Folder containing the input point clouds
 | ├ source_cloud.ply            # Source point cloud
-| ├ target_cloud.ply            # Target point cloud
+| └ target_cloud.ply            # Target point cloud
 ├ docker/                       # Docker folder
 | ├ build_dependencies.sh       # Bash file to build docker dependencies for the repo 
 | ├ Dockerfile_dependencies     # Docker file containing the dependencies to be built to run the repo
-| ├ Dockerfile_develop          # Docker file needed to build the dev container
+| └ Dockerfile_develop          # Docker file needed to build the dev container
 ├ .devcontainer                 # Dev container configuration folder
 ├ .gitignore                    # Git ignore file
 ├ .clang-format                 # Clang format file             
