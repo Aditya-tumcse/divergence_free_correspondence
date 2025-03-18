@@ -67,7 +67,7 @@ divergence_free_correspondence/
 ├ .devcontainer                 # Dev container configuration folder
 ├ .gitignore                    # Git ignore file
 ├ .clang-format                 # Clang format file             
-├ README.md                     # Project overview and documentation
+└ README.md                     # Project overview and documentation
 
 ```
 
