@@ -63,15 +63,19 @@ const Eigen::MatrixXd Matching::computeMetricDistance(
   return metric_distance;
 }
 
-Eigen::MatrixXd Matching::computeSoftCorrespondences(
+Eigen::SparseMatrix<double> Matching::computeSoftCorrespondences(
     const std::vector<adi::Point> &source_point_cloud,
     const std::vector<adi::Point> &target_point_cloud) {
-  Eigen::MatrixXd correspondences = Eigen::MatrixXd::Zero(
-      source_point_cloud.size(), source_point_cloud.size());
+
   const double scaling_factor = this->ComputeScalingFactor();
 
   const Eigen::MatrixXd metric_distance = computeMetricDistance(
       source_point_cloud, target_point_cloud, scaling_factor);
+
+  // Create triplet list for sparse matrix construction
+  std::vector<Eigen::Triplet<double>> triplets;
+  // Reserve estimated capacity (adjust based on expected sparsity)
+  triplets.reserve(source_point_cloud.size() * target_point_cloud.size() / 10);
 
   for (uint32_t i = 0; i < source_point_cloud.size(); ++i) {
     const double denominator = std::exp(metric_distance.row(i).array().sum() *
@@ -82,9 +86,20 @@ Eigen::MatrixXd Matching::computeSoftCorrespondences(
       const double numerator =
           std::exp((-1 / (2 * SIGMA * SIGMA) * distance * distance));
 
-      correspondences(i, j) = numerator / denominator;
+      double value = numerator / denominator;
+
+      if (!std::isnan(value) && std::abs(value) > 1e-10)
+        triplets.emplace_back(i, j, value);
     }
   }
+
+  // Create and populate the sparse matrix
+  Eigen::SparseMatrix<double> correspondences(source_point_cloud.size(),
+                                              target_point_cloud.size());
+  correspondences.setFromTriplets(triplets.begin(), triplets.end());
+
+  // Compress the sparse matrix
+  correspondences.makeCompressed();
 
   return correspondences;
 }

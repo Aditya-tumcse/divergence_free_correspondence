@@ -95,6 +95,66 @@ private:
   T *m_coeffs;
 };
 
+struct MatchingCostFunctor {
+  MatchingCostFunctor(
+      const Eigen::Vector3d &source_point, const Eigen::Vector3d &target_point,
+      const double weight,
+      const std::array<adi::deformation_field::BasisIndices,
+                       MAX_NUMBER_OF_VELOCITY_BASIS> &base_indices)
+      : s_target_point(target_point), s_source_point(source_point),
+        s_weight(weight), s_base_indices(base_indices) {
+
+    // TODO: compute velocity basis function here for each point
+    adi::deformation_field::DeformationField s_df;
+    Eigen::MatrixXd vel_basis_functions =
+        s_df.computeVelocityBasisFunctionsPerPoint<double>(base_indices,
+                                                           source_point);
+
+    s_vel_basis_function_x = vel_basis_functions.col(0);
+    s_vel_basis_function_y = vel_basis_functions.col(1);
+    s_vel_basis_function_z = vel_basis_functions.col(2);
+  }
+
+  template <typename T> bool checkForNaN(const Eigen::VectorX<T> &vec) const {
+    for (int i = 0; i < vec.size(); ++i) {
+      if (ceres::isnan(vec[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool operator()(const T *const coeffs_ak, T *residual) const {
+    T src_pt[3];
+    T target_pt[3];
+    utilities::toTemplatedPoint(s_source_point, src_pt);
+    utilities::toTemplatedPoint(s_target_point, target_pt);
+
+    PositionIncrementor<T> position_incrementor((T *const)(coeffs_ak));
+    position_incrementor.incrementPosition(
+        src_pt, s_vel_basis_function_x, s_vel_basis_function_y,
+        s_vel_basis_function_z, s_base_indices, NUMBER_OF_TIME_STEPS);
+
+    // if (checkForNaN<T>(updated_pos)) {
+    //   std::cout << "Updated position is invalid" << std::endl;
+    //   return false;
+    // }
+
+    residual[0] = computeResidual(src_pt, target_pt, T(s_weight));
+    return true;
+  }
+
+  const Eigen::Vector3d s_source_point;
+  const Eigen::Vector3d s_target_point;
+  Eigen::VectorXd s_vel_basis_function_x;
+  Eigen::VectorXd s_vel_basis_function_y;
+  Eigen::VectorXd s_vel_basis_function_z;
+  const double s_weight;
+  const std::array<adi::deformation_field::BasisIndices,
+                   MAX_NUMBER_OF_VELOCITY_BASIS> &s_base_indices;
+};
+
 void Optimize(const std::vector<adi::Point> &target_cloud,
               const std::vector<adi::Point> &src_cloud,
               const Eigen::MatrixXd &soft_corr_matrix,

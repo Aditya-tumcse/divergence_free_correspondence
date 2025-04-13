@@ -1,6 +1,7 @@
 #include <chrono>
 
 #include "../external/include/clue.hpp"
+#include "parallel_optimizer.hpp"
 #include "run.hpp"
 
 void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
@@ -43,24 +44,36 @@ void run(adi::pointCloud *source_cloud, adi::pointCloud *target_cloud) {
   Eigen::MatrixXd L_inv = adi::numerics::computePrecisionMatrix(base_indices);
   LOG_INFO("Completed computing precision matrix");
 
+  auto start = std::chrono::high_resolution_clock::now();
   // Update point cloud Y with the current deformation field
   while (iter < MAX_NUMBER_OF_ITERS) {
     // E-step : Compute soft correspondences
     auto matches = adi::matching::Matching(*initial_correspondences);
-    Eigen::MatrixXd soft_corr_matrix = matches.computeSoftCorrespondences(
-        source_downsampled_cloud, target_downsampled_cloud);
+
+    // TODO: Store soft correspondence matrix as a sparse matrix rather than a
+    // dense matrix
+    Eigen::SparseMatrix<double> soft_corr_matrix =
+        matches.computeSoftCorrespondences(source_downsampled_cloud,
+                                           target_downsampled_cloud);
 
     LOG_INFO("Soft correspondences computed");
 
     // M-step : handled by ceres
-    adi::numerics::Optimize(target_downsampled_cloud, source_downsampled_cloud,
-                            soft_corr_matrix, L_inv, base_indices);
+
+    adi::parallel_optimizer::ParallelOptimizer optimizer(MAX_NUMBER_OF_THREADS);
+    optimizer.Optimize(target_downsampled_cloud, source_downsampled_cloud,
+                       soft_corr_matrix, L_inv, base_indices);
     iter = iter + 1;
     // updated_cloud.clear();
   }
 
-  // for (size_t a_k_i = 0; a_k_i < coeffs_ak.size(); ++a_k_i) {
-  //   std::cout << coeffs_ak[a_k_i] << std::endl;
-  // }
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+  {
+    std::stringstream msg;
+    msg << "Duration of optimization (in seconds): " << duration.count()
+        << std::endl;
+    LOG_INFO(msg.str());
+  }
   return;
 }
