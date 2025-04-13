@@ -142,7 +142,6 @@ struct MatchingCostFunctor {
     // }
 
     residual[0] = computeResidual(src_pt, target_pt, T(s_weight));
-    std::cout << "Face value of the residual: " << residual[0] << std::endl;
     return true;
   }
 
