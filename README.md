@@ -71,9 +71,12 @@ divergence_free_correspondence/
 
 ```
 
+## Requirements
+ - CMake >= 3.16
+
 ## Installation
 
-The repo runs in a dockerised environment. USe the following command to build dependencies
+The repo runs in a dockerised environment. Use the following command to build dependencies
 
 ```bash
 bash docker/build_dependencies.sh
@@ -81,8 +84,13 @@ bash docker/build_dependencies.sh
 
 on the command line.
 
-## Requirements
- - CMake >= 3.16
+## Usage
+Ensure there is a data folder as shown in the folder structure above.
+Run the executable using the following command
+
+```bash
+./build/main_executable
+```
 
 ## Future Improvements
  - [ ] Integration of Open3D library for basic pointcloud processing
