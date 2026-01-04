@@ -1,83 +1,177 @@
 #include "deformation_field.hpp"
-#include "io.hpp"
 #include "constants.hpp"
+#include "io.hpp"
 #include "numerics.hpp"
 
-#include<cmath>
+#include <algorithm>
+#include <cmath>
+#include <eigen3/unsupported/Eigen/CXX11/Tensor>
+#include <pthread.h>
+#include <thread>
 
+namespace adi {
+namespace deformation_field {
+Fastor::Tensor<double, 1>
+DeformationField::dphidx(const BasisIndices basis_indices,
+                         const Eigen::MatrixXd &pts) {
 
-namespace adi{
-    namespace deformation_field{
-        const double DeformationField::phi(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
-        {
-            return 0.5 * sin(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
-        }
+  Eigen::VectorXd dphi_dx;
+  dphi_dx.setZero();
+  dphi_dx = 0.125 * M_PI * basis_indices.index_1 *
+            (M_PI * basis_indices.index_1 * pts.col(0)).array().cos() *
+            (M_PI * basis_indices.index_2 * pts.col(1)).array().sin() *
+            (M_PI * basis_indices.index_3 * pts.col(2)).array().sin();
 
-        const double DeformationField::dphidx(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
-        {
-            return 0.5 * M_PI * index_1 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
-        }
+  Eigen::Tensor<double, 1> eigen_tensor =
+      Eigen::TensorMap<Eigen::Tensor<double, 1>>(dphi_dx.data(),
+                                                 dphi_dx.size());
+  Fastor::TensorMap<double, 1> fastor_tensor(eigen_tensor.data());
 
-        const double DeformationField::dphidy(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
-        {
-            return 0.5 * M_PI * index_2 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
-        }
-
-        const double DeformationField::dphidz(const uint32_t &index_1, const uint32_t &index_2,const uint32_t &index_3, const double &x, const double &y, const double &z )
-        {
-            return 0.5 * M_PI * index_3 * cos(M_PI * index_1 * x) * sin(M_PI * index_2 * y) * sin(M_PI * index_3 * z);
-        }
-
-        std::tuple<double, double, double> DeformationField::computeVelocityBasisFunctions(const double &coeff_ak, const BasisIndices &base_index, const Eigen::Vector3d &point)
-        {
-            double vx = 0.0, vy = 0.0, vz = 0.0;
-
-            // Compute partial derivatives of the eigenfunction phi
-            double dphi_dx = dphidx(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
-            double dphi_dy = dphidy(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
-            double dphi_dz = dphidz(base_index.index_1, base_index.index_2, base_index.index_3, point.x(), point.y(), point.z());
-
-            // Basis function velocities
-            double v1x = 0, v1y = dphi_dz, v1z = -dphi_dy;
-            double v2x = -dphi_dz, v2y = 0, v2z = dphi_dx;
-            double v3x = dphi_dy, v3y = -dphi_dx, v3z = 0;
-
-            vx += coeff_ak * (v1x + v2x + v3x);
-            vy += coeff_ak * (v1y + v2y + v3y);
-            vz += coeff_ak * (v1z + v2z + v3z);
-
-            return std::make_tuple(vx, vy, vz);
-        }
-
-        Eigen::Vector3d DeformationField::computeVelocityField(const Eigen::Vector3d &point, const std::vector<BasisIndices> &base_indices, const Eigen::VectorXd &coeffs_ak)
-        {
-            Eigen::Vector3d velocity_field;
-            std::tuple<double, double, double> velocity_basis_functions;
-            double vx_sum = 0.0, vy_sum = 0.0, vz_sum = 0.0;
-
-            for(uint32_t i = 0;i < base_indices.size();++i)
-            {
-                
-                // Compute partial derivatives of the eigenfunction phi
-                double coeff_ak;
-                if(coeffs_ak.isZero()){
-                    coeff_ak = base_indices[i].eigen_value;
-                }
-                else{
-                    coeff_ak = coeffs_ak[i];
-                }
-                velocity_basis_functions = computeVelocityBasisFunctions(coeff_ak, base_indices[i], point);
-                vx_sum += std::get<0>(velocity_basis_functions);
-                vy_sum += std::get<1>(velocity_basis_functions);
-                vz_sum += std::get<2>(velocity_basis_functions);
-                
-            }
-            velocity_field.x() = vx_sum;
-            velocity_field.y() = vy_sum;
-            velocity_field.z() = vz_sum;
-
-            return velocity_field;
-        }
-
-    }
+  return fastor_tensor;
 }
+
+Fastor::Tensor<double, 1>
+DeformationField::dphidy(const BasisIndices basis_indices,
+                         const Eigen::MatrixXd &pts) {
+  Eigen::VectorXd dphi_dy;
+  dphi_dy.setZero();
+  dphi_dy = 0.125 * M_PI * basis_indices.index_2 *
+            (M_PI * basis_indices.index_1 * pts.col(0)).array().sin() *
+            (M_PI * basis_indices.index_2 * pts.col(1)).array().cos() *
+            (M_PI * basis_indices.index_3 * pts.col(2)).array().sin();
+
+  Eigen::Tensor<double, 1> eigen_tensor =
+      Eigen::TensorMap<Eigen::Tensor<double, 1>>(dphi_dy.data(),
+                                                 dphi_dy.size());
+  Fastor::TensorMap<double, 1> fastor_tensor(eigen_tensor.data());
+
+  return fastor_tensor;
+}
+
+Fastor::Tensor<double, 1>
+DeformationField::dphidz(const BasisIndices basis_indices,
+                         const Eigen::MatrixXd &pts) {
+  Eigen::VectorXd dphi_dz;
+  dphi_dz.setZero();
+  dphi_dz = 0.125 * M_PI * basis_indices.index_3 *
+            (M_PI * basis_indices.index_1 * pts.col(0)).array().sin() *
+            (M_PI * basis_indices.index_2 * pts.col(1)).array().sin() *
+            (M_PI * basis_indices.index_3 * pts.col(2)).array().cos();
+
+  Eigen::Tensor<double, 1> eigen_tensor =
+      Eigen::TensorMap<Eigen::Tensor<double, 1>>(dphi_dz.data(),
+                                                 dphi_dz.size());
+  Fastor::TensorMap<double, 1> fastor_tensor(eigen_tensor.data());
+
+  return fastor_tensor;
+}
+
+Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS,
+               TENSOR_DEPTH>
+DeformationField::computeVelocityBasisFunctions(
+    const std::vector<BasisIndices> &basis_indices,
+    const Eigen::MatrixXd &points) {
+  Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS, MAX_NUMBER_OF_VELOCITY_BASIS,
+                 TENSOR_DEPTH>
+      vel_basis_functions;
+  vel_basis_functions.zeros();
+
+  // Compute vectorized partial derivatives of the eigen function
+  for (uint32_t i = 0; i < MAX_NUMBER_OF_VELOCITY_BASIS; ++i) {
+    vel_basis_functions(Fastor::all, i, 0) = 0.0;
+    vel_basis_functions(Fastor::all, i, 1) =
+        dphidz(basis_indices.at(i), points);
+    vel_basis_functions(Fastor::all, i, 2) =
+        -dphidy(basis_indices.at(i), points);
+    vel_basis_functions(Fastor::all, i, 3) =
+        -vel_basis_functions(Fastor::all, i, 1);
+    vel_basis_functions(Fastor::all, i, 4) = 0.0;
+    vel_basis_functions(Fastor::all, i, 5) =
+        dphidx(basis_indices.at(i), points);
+    vel_basis_functions(Fastor::all, i, 6) =
+        -vel_basis_functions(Fastor::all, i, 2);
+    vel_basis_functions(Fastor::all, i, 7) =
+        -vel_basis_functions(Fastor::all, i, 5);
+    vel_basis_functions(Fastor::all, i, 8) = 0.0;
+  }
+
+  return vel_basis_functions;
+}
+
+Eigen::MatrixXd DeformationField::computeVelocityField(
+    const Eigen::VectorXd &coeffs_ak,
+    const Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                         MAX_NUMBER_OF_VELOCITY_BASIS, TENSOR_DEPTH>
+        &vel_basis_functions) {
+  Eigen::MatrixXd velocity_field_all_pts =
+      Eigen::MatrixXd::Zero(NUMBER_OF_SAMPLE_POINTS, 3);
+
+  // Create a Fastor tensor from the Eigen vector of the coefficients of
+  // velocity basis functions
+  Fastor::Tensor<double, MAX_NUMBER_OF_VELOCITY_BASIS> coeffs_ak_tensor(
+      coeffs_ak.data());
+
+  for (uint32_t i = 0; i < TENSOR_DEPTH; i += 3) {
+    Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                   MAX_NUMBER_OF_VELOCITY_BASIS>
+        vel_basis_x_component =
+            vel_basis_functions(Fastor::all, Fastor::all, i);
+    Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                   MAX_NUMBER_OF_VELOCITY_BASIS>
+        intermediate_vel_field_x =
+            Fastor::matmul(vel_basis_x_component, coeffs_ak_tensor);
+
+    Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                   MAX_NUMBER_OF_VELOCITY_BASIS>
+        vel_basis_y_component =
+            vel_basis_functions(Fastor::all, Fastor::all, i + 1);
+    Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                   MAX_NUMBER_OF_VELOCITY_BASIS>
+        intermediate_vel_field_y =
+            Fastor::matmul(vel_basis_y_component, coeffs_ak_tensor);
+
+    Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                   MAX_NUMBER_OF_VELOCITY_BASIS>
+        vel_basis_z_component =
+            vel_basis_functions(Fastor::all, Fastor::all, i + 2);
+    Fastor::Tensor<double, NUMBER_OF_SAMPLE_POINTS,
+                   MAX_NUMBER_OF_VELOCITY_BASIS>
+        intermediate_vel_field_z =
+            Fastor::matmul(vel_basis_z_component, coeffs_ak_tensor);
+
+    Eigen::Tensor<double, 2> x_component =
+        Eigen::TensorMap<Eigen::Tensor<double, 2>>(
+            intermediate_vel_field_x.data(), NUMBER_OF_SAMPLE_POINTS,
+            MAX_NUMBER_OF_VELOCITY_BASIS);
+    Eigen::Tensor<double, 1> columns_sum_x =
+        x_component.sum(Eigen::array<Eigen::Index, 1>({0}));
+    Eigen::Map<Eigen::VectorXd> vector_column_sums_x(columns_sum_x.data(),
+                                                     columns_sum_x.size());
+
+    Eigen::Tensor<double, 2> y_component =
+        Eigen::TensorMap<Eigen::Tensor<double, 2>>(
+            intermediate_vel_field_y.data(), NUMBER_OF_SAMPLE_POINTS,
+            MAX_NUMBER_OF_VELOCITY_BASIS);
+    Eigen::Tensor<double, 1> columns_sum_y =
+        y_component.sum(Eigen::array<Eigen::Index, 1>({0}));
+    Eigen::Map<Eigen::VectorXd> vector_column_sums_y(columns_sum_y.data(),
+                                                     columns_sum_y.size());
+
+    Eigen::Tensor<double, 2> z_component =
+        Eigen::TensorMap<Eigen::Tensor<double, 2>>(
+            intermediate_vel_field_z.data(), NUMBER_OF_SAMPLE_POINTS,
+            MAX_NUMBER_OF_VELOCITY_BASIS);
+    Eigen::Tensor<double, 1> columns_sum_z =
+        z_component.sum(Eigen::array<Eigen::Index, 1>({0}));
+    Eigen::Map<Eigen::VectorXd> vector_column_sums_z(columns_sum_z.data(),
+                                                     columns_sum_z.size());
+
+    velocity_field_all_pts.col(0) += vector_column_sums_x;
+    velocity_field_all_pts.col(1) += vector_column_sums_y;
+    velocity_field_all_pts.col(2) += vector_column_sums_z;
+  }
+
+  return velocity_field_all_pts;
+}
+} // namespace deformation_field
+} // namespace adi

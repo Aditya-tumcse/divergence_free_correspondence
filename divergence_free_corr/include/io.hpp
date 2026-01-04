@@ -1,69 +1,137 @@
 #ifndef IO_HPP
 #define IO_HPP
 
-#include<array>
-#include <pcl/io/ply_io.h>
-#include <pcl/common/io.h>
-#include <pcl/point_types.h>
-#include <pcl/features/shot_omp.h>
-#include <pcl/features/normal_3d.h>
 #include <Eigen/Dense>
-#include <queue>
+#include <array>
+#include <pcl/common/io.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
-namespace adi{
+#include "constants.hpp"
 
-struct Point{
-    Eigen::Vector3d s_point; //Point Coordinates
-    Eigen::Vector3d s_normal; // Normal info 
-    std::array<double, 352> s_descriptor; // Feature descriptor
+namespace adi {
 
-    Point() : s_point(0.0,0.0,0.0), s_normal(0.0,0.0,0.0), s_descriptor{} {}
+/**
+ * @brief Structure for storing information regarding the point of the
+ * pointcloud
+ *
+ */
+struct Point {
+  Eigen::Vector3d s_point;              // Point Coordinates
+  Eigen::Vector3d s_normal;             // Normal info
+  std::array<double, 352> s_descriptor; // Feature descriptor
 
-    Point(Eigen::Vector3d point, Eigen::Vector3d normal, std::array<double, 352> descriptor) : s_point(point), s_normal(normal), s_descriptor(descriptor) {}
+  Point() : s_point(0.0, 0.0, 0.0), s_normal(0.0, 0.0, 0.0), s_descriptor{} {}
 
-    pcl::SHOT352 convertToPCLDescriptor();
-};
+  Point(Eigen::Vector3d point, Eigen::Vector3d normal,
+        std::array<double, 352> descriptor)
+      : s_point(point), s_normal(normal), s_descriptor(descriptor) {}
 
-// Comparator for priority queue (max heap)
-struct FarthestPointComparator {
-  bool operator()(const std::pair<double, size_t> &a, const std::pair<double, size_t> &b) {
-    return a.first < b.first; // max heap based on distance
+  Point(pcl::PointXYZ point) : s_normal(0.0, 0.0, 0.0), s_descriptor{} {
+    s_point.x() = point.x;
+    s_point.y() = point.y;
+    s_point.z() = point.z;
   }
+
+  /**
+   * @brief Convert to PCL format of the descriptor
+   *
+   * @return SHOT descriptor pcl format
+   */
+  pcl::SHOT352 convertToPCLDescriptor();
 };
 
-class pointCloud{
-    public:
-        pointCloud(const std::string &point_cloud_path, const double &search_radius);
+class pointCloud {
+public:
+  pointCloud(const std::string &point_cloud_path);
 
-        const std::vector<Point> getPointCloud() const{ return m_point_cloud;}
+  pointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &source_cloud);
 
-        uint32_t getColumnIdOfTheFarthestSample(const Eigen::RowVectorXd &row);
-        std::unique_ptr<std::vector<Point>> samplePointCloud(const uint32_t max_number_of_points);
+  /**
+   * @brief Load the pointcloud file from disk
+   *
+   * @param cloud_file_path
+   *
+   * @return Pointer to the loaded pointcloud
+   */
+  pcl::PointCloud<pcl::PointXYZ>::Ptr
+  loadPlyFile(const std::string &cloud_file_path);
 
-        const uint32_t getSize() const {return m_point_cloud.size();}
+  /**
+   * @brief Set the loaded pointcloud from the disk into the format of this
+   * class
+   *
+   * @param cloud
+   */
+  void setPointCloud(const std::unique_ptr<std::vector<Point>> cloud);
 
-    private:
-        std::vector<Point> m_point_cloud; 
-        
-        pcl::PointCloud<pcl::PointXYZ>::Ptr readPointCloud(const std::string &point_cloud_path);
-        pcl::PointCloud<pcl::PointNormal>::Ptr normalEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud, const double &search_radius);
-        void computeShotFeatures(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_with_normals, const double &search_radius);
-        
-        const std::vector<Eigen::Vector3d> extractPoints(std::vector<adi::Point> points);
+  /**
+   * @brief Compute features on the pointcloud
+   *
+   * @param search_radius
+   */
+  void computeShotFeatures(const double &search_radius);
+
+  /**
+   * @brief Get the private member variable m_point_cloud
+   *
+   * @return The private memeber variable m_point_cloud of the class
+   */
+  const std::vector<Point> getPointCloud() const { return m_point_cloud; }
+
+  /**
+   * @brief Downsample the pointcloud
+   *
+   * @param max_number_of_points
+   */
+  void samplePointCloud(const uint32_t max_number_of_points);
+
+  /**
+   * @brief Get the size of the pointcloud
+   *
+   * @return Size of the pointcloud
+   */
+  const uint32_t getSize() const { return m_point_cloud.size(); }
+
+  static void serializeCloud(const std::vector<adi::Point> &cloud,
+                             const std::string &file_path);
+
+  ~pointCloud() = default;
+
+private:
+  std::vector<Point> m_point_cloud;
+
+  /**
+   * @brief Convert to PCL format pointcloud
+   *
+   * @return Returns pointer to the PCL format pointcloud
+   */
+  pcl::PointCloud<pcl::PointXYZ>::Ptr toPclCloud();
+
+  static pcl::PointCloud<pcl::PointXYZ>::Ptr
+  toPclCloud(const std::vector<adi::Point> &cloud);
+
+  /**
+   * @brief Loads the pointcloud from PCL format to the format of the class
+   *
+   * @param point_cloud
+   *
+   */
+  void loadPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &point_cloud);
+
+  /**
+   * @brief Estimates normals of the pointcloud
+   *
+   * @param point_cloud
+   * @param search_radius
+   *
+   * @return Pointer to the pointcloud in PCL format with estimated normals
+   */
+  pcl::PointCloud<pcl::PointNormal>::Ptr
+  normalEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud,
+                   const double &search_radius);
 };
-}
-
-namespace utilities{
-    double eucledianDistance(const Eigen::Vector3d &point_1, const Eigen::Vector3d &point_2);
-
-    Eigen::MatrixXd computeDistanceMatrix(const std::vector<Eigen::Vector3d> points);
-
-    double computeL2Norm(const std::array<double, 352> &descriptor_1, const std::array<double, 352>  &descriptor_2);
-
-    bool isValidDescriptor(const pcl::SHOT352& descriptor);
-
-    std::unique_ptr<std::vector<std::pair<adi::Point, adi::Point>>> computeCorrespondences(std::vector<adi::Point> source_point_cloud,std::vector<adi::Point> target_point_cloud);
-
-    
-}
+} // namespace adi
 #endif // IO_HPP
