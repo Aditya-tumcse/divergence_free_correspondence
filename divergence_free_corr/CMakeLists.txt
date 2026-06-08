@@ -1,26 +1,41 @@
-cmake_minimum_required(VERSION 3.16)
-project(divergence_free_corr)
+# ---------------------------------------------------------------------------
+# Core static library
+# ---------------------------------------------------------------------------
+add_library(divergence_free_corr STATIC
+    src/io.cpp
+    src/features.cpp
+    src/matching.cpp
+    src/deformation_field.cpp
+    src/utilities.cpp
+    src/numerics.cpp
+    src/parallel_optimizer.cpp
+    src/run.cpp
+)
 
-# Use C++ 20
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+target_include_directories(divergence_free_corr
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/include>
+    PRIVATE
+        ${PCL_INCLUDE_DIRS}
+        ${Ceres_INCLUDE_DIRS}
+)
 
-# Set include directories for project headers
-include_directories(${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(divergence_free_corr
+    PUBLIC
+        ${PCL_LIBRARIES}
+        Ceres::ceres
+    PRIVATE
+        project_options
+)
 
-# Find required packages
-find_package(PCL REQUIRED)
-find_package(Ceres REQUIRED)
-
-# Add the `src` subdirectory
-add_subdirectory(src)
-
-# Create the main executable
+# ---------------------------------------------------------------------------
+# Executable
+# ---------------------------------------------------------------------------
 add_executable(main_executable src/main.cpp)
 
-# Link PCL and other dependencies to the main executable
-target_include_directories(main_executable PRIVATE ${PCL_INCLUDE_DIRS} ${Ceres_INCLUDE_DIRS})
-target_link_libraries(main_executable PRIVATE divergence_free_corr ${PCL_LIBRARIES} Ceres::ceres)
-
-
-
+target_link_libraries(main_executable
+    PRIVATE
+        divergence_free_corr
+        project_options
+)

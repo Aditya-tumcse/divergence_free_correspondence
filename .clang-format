@@ -1,2 +1,97 @@
+---
 BasedOnStyle: LLVM
+
+# ---- Column limit --------------------------------------------------------
 ColumnLimit: 100
+
+# ---- Indentation ---------------------------------------------------------
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+NamespaceIndentation: None
+
+# ---- Braces --------------------------------------------------------------
+BreakBeforeBraces: Attach
+BraceWrapping:
+    AfterCaseLabel:        false
+    AfterClass:            false
+    AfterControlStatement: Never
+    AfterEnum:             false
+    AfterFunction:         false
+    AfterNamespace:        false
+    AfterStruct:           false
+    AfterUnion:            false
+    BeforeCatch:           false
+    BeforeElse:            false
+
+# ---- Short constructs ----------------------------------------------------
+AllowShortBlocksOnASingleLine:   Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine:    false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine:  All
+AllowShortLoopsOnASingleLine:    false
+
+# ---- Line breaking -------------------------------------------------------
+BreakBeforeBinaryOperators:  NonAssignment
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList:        BeforeColon
+BreakStringLiterals:         true
+AlwaysBreakTemplateDeclarations: Yes
+
+# ---- Alignment -----------------------------------------------------------
+AlignAfterOpenBracket:       Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros:      false
+AlignEscapedNewlines:        Left
+AlignOperands:               Align
+AlignTrailingComments:       true
+
+# ---- Pointers & references -----------------------------------------------
+PointerAlignment:   Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# ---- Spacing -------------------------------------------------------------
+SpaceAfterCStyleCast:             false
+SpaceAfterLogicalNot:             false
+SpaceAfterTemplateKeyword:        true
+SpaceBeforeAssignmentOperators:   true
+SpaceBeforeCpp11BracedList:       false
+SpaceBeforeParens:                ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyBlock:                false
+SpacesBeforeTrailingComments:     2
+SpacesInAngles:                   Never
+SpacesInCStyleCastParentheses:    false
+SpacesInContainerLiterals:        false
+SpacesInParentheses:              false
+SpacesInSquareBrackets:           false
+
+# ---- Includes ------------------------------------------------------------
+SortIncludes:    CaseSensitive
+IncludeBlocks:   Regroup
+IncludeCategories:
+    - Regex:    '^".*"'
+      Priority: 1
+    - Regex:    '^<(pcl|ceres|Eigen|Fastor).*>'
+      Priority: 2
+    - Regex:    '^<.*\.h(pp)?>'
+      Priority: 3
+    - Regex:    '^<.*>'
+      Priority: 4
+
+# ---- Misc ----------------------------------------------------------------
+MaxEmptyLinesToKeep:              1
+KeepEmptyLinesAtTheStartOfBlocks: false
+CompactNamespaces:                false
+FixNamespaceComments:             true
+ReflowComments:                   true
+SortUsingDeclarations:            true
+...

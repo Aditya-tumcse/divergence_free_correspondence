@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+# pre-commit: enforce clang-format on staged C++ source files.
+# Installed via: bash scripts/install-hooks.sh
+#
+
+set -euo pipefail
+
+CLANG_FORMAT=$(command -v clang-format 2>/dev/null || true)
+if [[ -z "$CLANG_FORMAT" ]]; then
+    echo "[pre-commit] clang-format not found — skipping format check."
+    exit 0
+fi
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR \
+    | grep -E '\.(cpp|hpp|h|cxx|cc)$' || true)
+
+if [[ -z "$STAGED" ]]; then
+    exit 0
+fi
+
+FAILED=()
+while IFS= read -r file; do
+    if [[ ! -f "$file" ]]; then
+        continue
+    fi
+    if ! "$CLANG_FORMAT" --dry-run --Werror "$file" &>/dev/null; then
+        FAILED+=("$file")
+    fi
+done <<< "$STAGED"
+
+if [[ ${#FAILED[@]} -gt 0 ]]; then
+    echo "[pre-commit] clang-format violations detected in:"
+    printf '  %s\n' "${FAILED[@]}"
+    echo ""
+    echo "  Auto-fix:  clang-format -i ${FAILED[*]}"
+    echo "  Or:        cmake --build build --target format"
+    echo ""
+    echo "  Re-stage the files and commit again."
+    exit 1
+fi
