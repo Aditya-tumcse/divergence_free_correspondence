@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# commit-msg: enforce Conventional Commits format.
+# Installed via: bash scripts/install-hooks.sh
+#
+
+set -euo pipefail
+
+MSG_FILE="$1"
+FIRST_LINE=$(head -1 "$MSG_FILE")
+
+# Allow merge/revert/fixup commits unchanged
+if echo "$FIRST_LINE" | grep -qE '^(Merge|Revert|fixup!|squash!)'; then
+    exit 0
+fi
+
+PATTERN='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+'
+
+if ! echo "$FIRST_LINE" | grep -qE "$PATTERN"; then
+    echo "[commit-msg] Commit message does not follow Conventional Commits format."
+    echo ""
+    echo "  Format:  <type>(<scope>): <description>"
+    echo "  Types:   feat | fix | docs | style | refactor | test | chore | perf | ci | build | revert"
+    echo ""
+    echo "  Examples:"
+    echo "    feat: add divergence-free velocity basis"
+    echo "    fix(matching): correct soft correspondence weight"
+    echo "    refactor(numerics): simplify Runge-Kutta integration"
+    echo ""
+    echo "  Your message: $FIRST_LINE"
+    exit 1
+fi

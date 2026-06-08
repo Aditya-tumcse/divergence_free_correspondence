@@ -10,6 +10,9 @@ class DivFreeCorrespondenceConanfile(ConanFile):
         self.requires("ceres-solver/2.2.0")
         self.requires("eigen/3.4.0", override=True)
 
+    def build_requirements(self):
+        self.test_requires("catch2/3.5.2")
+
     def configure(self):
         # Disable heavy optional PCL deps not needed for this project
         self.options["pcl"].with_opengl = False

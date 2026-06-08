@@ -78,6 +78,12 @@ find_package(Ceres REQUIRED)
 add_subdirectory(divergence_free_corr)
 
 # ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+enable_testing()
+add_subdirectory(tests)
+
+# ---------------------------------------------------------------------------
 # clang-format targets
 #   cmake --build build --target format        — apply formatting in-place
 #   cmake --build build --target format-check  — CI-safe dry-run (fails on diff)
@@ -103,4 +109,26 @@ if(CLANG_FORMAT)
     )
 else()
     message(WARNING "clang-format not found — format and format-check targets unavailable")
+endif()
+
+# ---------------------------------------------------------------------------
+# cppcheck target
+#   cmake --build build --target cppcheck
+# ---------------------------------------------------------------------------
+find_program(CPPCHECK cppcheck)
+if(CPPCHECK)
+    add_custom_target(cppcheck
+        COMMAND ${CPPCHECK}
+            --enable=all
+            --std=c++20
+            --suppress=missingInclude
+            --suppress=missingIncludeSystem
+            --suppress=unmatchedSuppression
+            --error-exitcode=1
+            ${CMAKE_SOURCE_DIR}/divergence_free_corr/src/
+        COMMENT "cppcheck: static analysis"
+        VERBATIM
+    )
+else()
+    message(STATUS "cppcheck not found — cppcheck target unavailable")
 endif()
