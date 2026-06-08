@@ -1,15 +1,17 @@
 {
-	"name": "div_free_corr",
+	"name": "deform",
+	"features": {
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "20"
+		}
+	},
 	"build": {
 		"dockerfile": "../docker/Dockerfile_develop",
 		"args": {
 			"user": "${localEnv:USER}"
 		}
 	},
-	"runArgs": [
-		"--gpus",
-		"all"
-	],
+	"postCreateCommand": "conan profile detect --force && conan install . --output-folder=build --build=missing -s build_type=Release -s compiler.cppstd=20 && npm install -g @anthropic-ai/claude-code && bash .devcontainer/setup_rtk.sh && bash scripts/install-hooks.sh",
 	"remoteUser": "${localEnv:USER}",
 	"updateRemoteUserUID": true,
 	"mounts": [
@@ -28,7 +30,8 @@
 				"ms-python.python",
 				"ms-vscode.cpptools-extension-pack",
 				"mhutchie.git-graph",
-				"Gruntfuggly.todo-tree"
+				"Gruntfuggly.todo-tree",
+				"Anthropic.claude-code"
 			]
 		}
 	}

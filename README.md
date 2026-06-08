@@ -73,16 +73,46 @@ divergence_free_correspondence/
 
 ## Requirements
  - CMake >= 3.16
+ - Python >= 3.8
+ - [Conan](https://conan.io/) >= 2.0 (`pip install conan`)
 
 ## Installation
 
-The repo runs in a dockerised environment. Use the following command to build dependencies
+### With Dev Container (recommended)
+
+Open the repo in VS Code and reopen in the dev container. The `postCreateCommand` will automatically:
+1. Detect your compiler profile
+2. Fetch and build all C++ dependencies via Conan
+3. Generate the CMake toolchain file
+
+### Local build
 
 ```bash
-bash docker/build_dependencies.sh
+# Install Conan if not already installed
+pip install conan
+
+# Detect compiler profile (once per machine)
+conan profile detect --force
+
+# Fetch/build dependencies (output goes into build/)
+conan install . --output-folder=build --build=missing \
+    -s build_type=Release -s compiler.cppstd=20
+
+# Configure and build
+cmake -S divergence_free_corr -B build \
+    -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake \
+    -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
 ```
 
-on the command line.
+> **Note:** The first `conan install` will build PCL and Ceres from source if pre-built
+> binaries are not available for your compiler profile. This can take 20–40 minutes.
+> Subsequent runs use the Conan cache and are fast.
+
+To check available PCL versions on ConanCenter:
+```bash
+conan search pcl -r conancenter
+```
 
 ## Usage
 Ensure there is a data folder as shown in the folder structure above.

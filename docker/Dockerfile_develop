@@ -1,31 +1,44 @@
+FROM ubuntu:22.04
 
-FROM div_free_corr_dependencies:latest
 ARG user
 ARG uid=1001
 ARG gid=${uid}
 
-ENV USERNAME ${user}
+ENV USERNAME=${user}
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Replicate the local user in the container, with same name/uid/gid
+# Build tools only — C++ dependencies are managed by Conan
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    wget \
+    python3 \
+    python3-pip \
+    pkg-config \
+    ca-certificates \
+    gdb \
+    clang-format \
+    bash-completion \
+    screen \
+    sudo \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install conan
+
 RUN useradd -m $USERNAME && \
     echo "$USERNAME:$USERNAME" | chpasswd && \
     usermod --shell /bin/bash $USERNAME && \
-    usermod  --uid ${uid} $USERNAME && \
+    usermod --uid ${uid} $USERNAME && \
     groupmod --gid ${gid} $USERNAME && \
     usermod -aG sudo $USERNAME
 
-# TODO: Find a better way to handle the groups
 RUN groupadd --gid 1007 data && \
     usermod -aG data $USERNAME
 
-# Download tools 
-RUN apt-get update && \
-    apt-get install -y wget git screen gdb clang-format bash-completion
-
 WORKDIR /home/${user}
-
 USER ${user}
 
-#Expose ssh port
 EXPOSE 22
 ENTRYPOINT bash
